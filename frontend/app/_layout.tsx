@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Importimi i Komponentëve për Ekranet
-import AboutUs from '../Screens/admin/AboutUs';
-import ContactUs from '../Screens/admin/ContactUs';
+import AboutUs from '../Screens/user/AboutUs';
+import ContactUs from '../Screens/user/ContactUs';
 import FoodScreen from '../Screens/admin/FoodScreen';
-import ForgotPasswordScreen from '../Screens/admin/ForgotPasswordScreen';
-import LoginScreen from '../Screens/admin/LoginScreen';
-import SignupScreen from '../Screens/admin/SignupScreen';
-
+import ForgotPasswordScreen from '../Screens/components/ForgotPasswordScreen';
+import LoginScreen from '../Screens/components/LoginScreen';
+import SignupScreen from '../Screens/components/SignupScreen';
+import UFoodScreen from '../Screens/user/UserFoodScreen';
+import HomeScreen from '../Screens/components/HomeScreen';
+import AdminMessagesScreen from '../Screens/admin/AdminMessages';
+import AdminScreen from '../Screens/admin/AdminScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('home'); // Përdorim state për të kontrolluar cilin ekran të shfaqim
@@ -20,26 +23,22 @@ export default function App() {
   const navigateToFood = () => setScreen('food');
   const navigateToHome = () => setScreen('home');
   const navigateToAboutUs = () => setScreen('aboutUs');
-  const navigateToContactUs = () => setScreen('contactUs') // Funksioni për "Rreth Nesh"
+  const navigateToContactUs = () => setScreen('contactUs');
+  const navigateToUFood = () => setScreen('UFood');
+  const navigateToAdminMessages = () => setScreen('adminMessages');
+  const navigateToAdminScreen = () => setScreen('admin');
+  
 
   return (
     <View style={styles.container}>
       {/* Ekrani Home */}
       {screen === 'home' && (
-        <View style={styles.screen}>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <Text style={styles.title}>Welcome to Our Fast Food</Text>
-            <Text style={styles.subtitle}>Delicious Meals. Fast Service.</Text>
-            
-            <TouchableOpacity style={styles.button} onPress={navigateToLogin}>
-              <Text style={styles.buttonText}>Go to Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={navigateToFood}>
-              <Text style={styles.buttonText}>Go to Food Menu</Text>
-            </TouchableOpacity>
-      
-          </ScrollView>
-        </View>
+        <HomeScreen
+          navigateToLogin={navigateToLogin}
+        
+          navigateToUFood={navigateToUFood}
+        />
+  
       )}
 
       {/* Ekrani Login */}
@@ -49,6 +48,8 @@ export default function App() {
           navigateToSignup={navigateToSignup}
           navigateToForgotPassword={navigateToForgotPassword}
           navigateToFood={navigateToFood}
+          navigateToUFood={navigateToUFood}
+        
         />
       )}
 
@@ -59,15 +60,33 @@ export default function App() {
       {screen === 'forgotPassword' && <ForgotPasswordScreen navigateToHome={navigateToHome} />}
 
       {/* Ekrani Food Menu */}
-      {screen === 'food' && <FoodScreen navigateToHome={navigateToHome} navigateToAboutUs={navigateToAboutUs} navigateToContactUs={navigateToContactUs} />}
+      {screen === 'food' && (
+        <FoodScreen
+          navigateToHome={navigateToHome}
+          navigateToAboutUs={navigateToAboutUs}
+          navigateToAdminMessage={navigateToAdminMessages}
+          navigateToAdminScreen={navigateToAdminScreen}
+        />
+      )}
 
-          {screen === 'contactUs' && <ContactUs navigateToHome={navigateToHome} />}
-          {screen === 'aboutUs' && <AboutUs navigateToHome={navigateToHome} />}
+      {/* Ekrani About Us dhe Contact Us */}
+      {screen === 'aboutUs' && <AboutUs navigateToHome={navigateToHome} />}
+      {screen === 'contactUs' && <ContactUs navigateToHome={navigateToHome} />}
+  {/* Ekrani Admin Messages */}
+{screen === 'adminMessages' && <AdminMessagesScreen />}
+{screen === 'admin' && <AdminScreen />}
 
-      {/* Ekrani About Us */}
 
-   
-      
+
+      {/* Ekrani UFood */}
+    {screen === 'UFood' && (
+  <UFoodScreen 
+    navigateToHome={navigateToHome}
+    navigateToAboutUs={navigateToAboutUs} 
+    navigateToContactUs={navigateToContactUs} 
+  />
+)}
+
     </View>
   );
 }
@@ -101,12 +120,6 @@ const styles = StyleSheet.create({
     marginBottom: 20, 
     color: '#777', 
     fontStyle: 'italic' 
-  },
-  text: { 
-    fontSize: 18, 
-    marginBottom: 20, 
-    textAlign: 'center', 
-    color: '#555' 
   },
   button: { 
     backgroundColor: '#4CAF50', 
