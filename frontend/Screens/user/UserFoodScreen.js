@@ -9,11 +9,17 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-
+import WeatherCard from '../user/WeatherCard';
 import axios from 'axios';
+import { Calendar } from 'react-native-calendars';
+import { Platform } from 'react-native';
 
 const API_URL = 'http://localhost:3012/foods';
 const ORDER_API_URL = 'http://localhost:3012/orders';
+
+const API_EVENTS_URL = Platform.OS === 'android'
+  ? 'http://10.0.2.2:3012/events'
+  : 'http://localhost:3012/events';
 
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
@@ -23,9 +29,7 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
   const [foodData, setFoodData] = useState([]);
   const [cart, setCart] = useState([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [activeScreen, setActiveScreen] = useState('menu'); // 'menu' or 'cart' or 'checkout'
-  
-  // Form fields për checkout
+  const [activeScreen, setActiveScreen] = useState('menu');
   const [checkoutData, setCheckoutData] = useState({
     name: '',
     location: '',
@@ -33,8 +37,20 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
     paymentMethod: '',
   });
 
+  const [events, setEvents] = useState({});
+  const [eventData, setEventData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+
+  // Funksion për nxjerrjen vetëm të pjesës së datës nga datetime string
+  const formatDate = (datetime) => {
+    if (!datetime) return '';
+    return datetime.split('T')[0]; // merr vetëm YYYY-MM-DD
+  };
+
   useEffect(() => {
     fetchFoods();
+    fetchEvents();
   }, []);
 
   const fetchFoods = async () => {
@@ -47,9 +63,31 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
     }
   };
 
+  const fetchEvents = async () => {
+    try {
+      const response = await axios.get(API_EVENTS_URL);
+      const eventDataResponse = response.data;
+
+      const formattedEvents = {};
+      eventDataResponse.forEach(event => {
+        const date = formatDate(event.date);
+        formattedEvents[date] = { marked: true, dotColor: 'red' };
+      });
+
+      setEvents(formattedEvents);
+      setEventData(eventDataResponse);
+    } catch (error) {
+      console.error('Gabim gjatë marrjes së eventeve:', error);
+    }
+  };
+
+  const toggleSidebar = () => {
+    setSidebarVisible(!sidebarVisible);
+  };
+
   const handleAddToCart = (food) => {
     setCart([...cart, food]);
-    Alert.alert('Shtuar në shportë', `${food.name} u shtua me sukses.`);
+    Alert.alert('Ushqimi u shtua në karrocë');
   };
 
   const handleRemoveFromCart = (index) => {
@@ -58,24 +96,19 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
     setCart(newCart);
   };
 
-  const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
-
-  // Përditëso fushat e formës
-  const handleInputChange = (field, value) => {
-    setCheckoutData({ ...checkoutData, [field]: value });
-  };
-
-  // Kur klikojmë "Checkout" nga shporta
   const handleCheckout = () => {
     if (cart.length === 0) {
-      Alert.alert('Shporta është bosh', 'Ju lutem shtoni ushqime para se të blini.');
+      Alert.alert('Shporta është bosh');
       return;
     }
     setActiveScreen('checkout');
   };
 
-  // Konfirmimi i porosisë me dërgim në backend
-  const confirmOrder = async () => {
+  const handleInputChange = (field, value) => {
+    setCheckoutData({ ...checkoutData, [field]: value });
+  };
+
+ const confirmOrder = async () => {
     const { name, location, phone, paymentMethod } = checkoutData;
     if (!name || !location || !phone || !paymentMethod) {
       Alert.alert('Gabim', 'Ju lutem plotësoni të gjitha fushat.');
@@ -104,21 +137,30 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
     }
   };
 
+  const onDateSelected = (day) => {
+    const selectedDateStr = day.dateString;
+
+    const filteredEvents = eventData.filter(event => formatDate(event.date) === selectedDateStr);
+
+    if (filteredEvents.length > 0) {
+      Alert.alert('Event', filteredEvents[0].title);
+    } else {
+      Alert.alert('Event', 'Nuk ka evente për këtë datë.');
+    }
+
+    setSelectedDate(selectedDateStr);
+    setSelectedDateEvents(filteredEvents);
+  };
+
   return (
     <View style={styles.container}>
-      {/* Phone Frame */}
       <View style={styles.phoneFrame}>
-        {/* Notch */}
         <View style={styles.notch} />
-
-        {/* Status Bar */}
         <View style={styles.statusBar}>
           <Text style={{ color: 'white', fontWeight: 'bold' }}>9:41 AM</Text>
         </View>
 
-        {/* App Content */}
         <View style={styles.appContent}>
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={toggleSidebar}>
               <Text style={styles.headerButton}>☰</Text>
@@ -129,7 +171,6 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
             </TouchableOpacity>
           </View>
 
-          {/* Sidebar */}
           {sidebarVisible && (
             <View style={styles.sidebar}>
               <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}>
@@ -141,15 +182,19 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
               <TouchableOpacity onPress={() => { toggleSidebar(); navigateToContactUs(); }}>
                 <Text style={styles.sidebarItem}>Contact Us</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); setActiveScreen('events'); }}>
+                <Text style={styles.sidebarItem}>Events</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={toggleSidebar}>
                 <Text style={[styles.sidebarItem, { color: 'red' }]}>Close</Text>
               </TouchableOpacity>
+              <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#bbb', paddingTop: 10 }}>
+                <WeatherCard />
+              </View>
             </View>
           )}
 
-          {/* Content */}
           <ScrollView style={styles.content}>
-            {/* MENU SCREEN */}
             {activeScreen === 'menu' && (
               foodData.map(food => (
                 <View key={food.id} style={styles.card}>
@@ -166,7 +211,6 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
               ))
             )}
 
-            {/* CART SCREEN */}
             {activeScreen === 'cart' && (
               <>
                 {cart.length === 0 ? (
@@ -191,7 +235,7 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
               </>
             )}
 
-            {/* CHECKOUT SCREEN */}
+      
             {activeScreen === 'checkout' && (
               <View style={styles.checkoutForm}>
                 <Text style={styles.checkoutTitle}>Konfirmo Porosinë</Text>
@@ -231,15 +275,40 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
                 </TouchableOpacity>
               </View>
             )}
+     
+
+
+            {activeScreen === 'events' && (
+              <View style={styles.eventsContainer}>
+                <Text style={styles.checkoutTitle}>Evente</Text>
+                <Calendar
+                  markedDates={{
+                    ...events,
+                    [selectedDate]: { selected: true, selectedColor: 'blue' }
+                  }}
+                  onDayPress={onDateSelected}
+                />
+                {selectedDate && selectedDateEvents.length > 0 && (
+                  <View style={{ marginTop: 20 }}>
+                    <Text style={{ fontWeight: 'bold' }}>Eventet e datës {selectedDate}:</Text>
+                    {selectedDateEvents.map(event => (
+                      <Text key={event.id} style={{ marginVertical: 5 }}>{event.title}</Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
           </ScrollView>
 
-          {/* Bottom Navigation */}
-          <View style={styles.bottomNav}>
-            <TouchableOpacity onPress={() => setActiveScreen('menu')} style={[styles.navButton, activeScreen === 'menu' && styles.navButtonActive]}>
-              <Text style={styles.navButtonText}>Menu</Text>
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={() => setActiveScreen('menu')}>
+              <Text style={styles.footerButton}>Menu</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveScreen('cart')} style={[styles.navButton, activeScreen === 'cart' && styles.navButtonActive]}>
-              <Text style={styles.navButtonText}>Cart ({cart.length})</Text>
+            <TouchableOpacity onPress={() => setActiveScreen('cart')}>
+              <Text style={styles.footerButton}>Cart ({cart.length})</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setActiveScreen('events')}>
+              <Text style={styles.footerButton}>Events</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -248,11 +317,10 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333', // sfondi jashtë telefonit
+    backgroundColor: '#ccc',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -260,205 +328,177 @@ const styles = StyleSheet.create({
     width: PHONE_WIDTH,
     height: PHONE_HEIGHT,
     backgroundColor: 'black',
-    borderRadius: 50,
-    shadowColor: '#000',
-    shadowOpacity: 0.9,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
+    borderRadius: 40,
     overflow: 'hidden',
   },
   notch: {
-    width: 200,
     height: NOTCH_HEIGHT,
     backgroundColor: 'black',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    alignSelf: 'center',
-    marginTop: 10,
-    zIndex: 2,
   },
   statusBar: {
     height: 20,
-    backgroundColor: 'black',
     alignItems: 'center',
     justifyContent: 'center',
   },
   appContent: {
     flex: 1,
-    backgroundColor: '#fafafa',
-    paddingTop: 10,
-    paddingHorizontal: 15,
+    backgroundColor: 'white',
   },
   header: {
-    height: 40,
+    height: 50,
+    backgroundColor: '#2e86de',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
-  },
-  headerButton: {
-    fontSize: 24,
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
   },
   headerTitle: {
-    fontSize: 20,
+    color: 'white',
     fontWeight: 'bold',
+    fontSize: 18,
+  },
+  headerButton: {
+    color: 'white',
+    fontSize: 24,
   },
   sidebar: {
     position: 'absolute',
-    top: 50,
+    top: 70,
     left: 0,
-    width: 140,
+    width: 200,
     backgroundColor: '#ddd',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    zIndex: 10,
+    padding: 15,
+    zIndex: 100,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
   },
   sidebarItem: {
     fontSize: 16,
-    paddingVertical: 8,
-    borderBottomColor: '#bbb',
-    borderBottomWidth: 1,
+    marginVertical: 10,
   },
   content: {
     flex: 1,
-    marginBottom: 60,
+    padding: 10,
   },
   card: {
-    backgroundColor: 'white',
+    flexDirection: 'row',
     marginBottom: 15,
-    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
   },
   foodImage: {
-    width: '100%',
-    height: 150,
+    width: 100,
+    height: 100,
   },
   cardContent: {
-    padding: 12,
+    flex: 1,
+    padding: 10,
   },
   foodName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   foodDesc: {
     fontSize: 14,
-    marginVertical: 5,
     color: '#555',
   },
   foodPrice: {
-    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginTop: 5,
   },
   addButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: '#27ae60',
+    paddingVertical: 6,
+    borderRadius: 5,
   },
   addButtonText: {
     color: 'white',
-    fontWeight: 'bold',
+    textAlign: 'center',
   },
   emptyCartText: {
-    marginTop: 50,
     textAlign: 'center',
-    fontSize: 18,
-    color: '#999',
+    marginTop: 20,
+    fontSize: 16,
   },
   cartItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#eee',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
   cartItemText: {
     fontSize: 16,
   },
   removeText: {
     color: 'red',
-    fontWeight: 'bold',
   },
   checkoutButton: {
-    backgroundColor: '#2196F3',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 10,
+    backgroundColor: '#2980b9',
+    marginTop: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
   },
   checkoutButtonText: {
     color: 'white',
+    textAlign: 'center',
     fontWeight: 'bold',
-    fontSize: 16,
   },
   checkoutForm: {
-    marginTop: 10,
-    paddingHorizontal: 10,
+    padding: 10,
   },
   checkoutTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 20,
-    alignSelf: 'center',
+    marginBottom: 15,
+    textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#aaa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
-    fontSize: 16,
+    borderColor: '#ccc',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 10,
+    borderRadius: 5,
   },
   confirmButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
+    backgroundColor: '#27ae60',
+    paddingVertical: 10,
+    borderRadius: 5,
     marginBottom: 10,
   },
   confirmButtonText: {
     color: 'white',
+    textAlign: 'center',
     fontWeight: 'bold',
-    fontSize: 18,
   },
   cancelButton: {
-    backgroundColor: '#f44336',
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
+    backgroundColor: '#c0392b',
+    paddingVertical: 10,
+    borderRadius: 5,
   },
   cancelButtonText: {
     color: 'white',
+    textAlign: 'center',
     fontWeight: 'bold',
-    fontSize: 16,
   },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    height: 55,
-    backgroundColor: '#eee',
+  eventsContainer: {
+    marginTop: 10,
+  },
+  footer: {
+    height: 50,
+    backgroundColor: '#2e86de',
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderColor: '#ccc',
-  },
-  navButton: {
-    flex: 1,
+    justifyContent: 'space-around',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  navButtonActive: {
-    backgroundColor: '#ddd',
-  },
-  navButtonText: {
-    fontSize: 16,
+  footerButton: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

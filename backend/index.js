@@ -78,7 +78,27 @@ app.post('/api/login', (req, res) => {
     });
   });
 });
+app.post('/api/reset-password', (req, res) => {
+  const { email, newPassword } = req.body;
 
+  if (!email || !newPassword) {
+    return res.status(400).json({ message: 'Të dhënat mungojnë' });
+  }
+
+  const query = 'UPDATE users SET password = ? WHERE email = ?';
+  db.query(query, [newPassword, email], (err, result) => {
+    if (err) {
+      console.error('Gabim nga databaza:', err);
+      return res.status(500).json({ message: 'Gabim gjatë përditësimit të fjalëkalimit' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Emaili nuk ekziston' });
+    }
+
+    res.status(200).json({ message: 'Fjalëkalimi u ndryshua me sukses' });
+  });
+});
 // ================= FOODS =================
 // Merr të gjitha ushqimet
 app.get('/foods', (req, res) => {
@@ -152,6 +172,7 @@ app.get('/admin/messages', (req, res) => {
   });
 });
 
+
 app.post('/orders', (req, res) => {
   const { name, location, phone, paymentMethod, items, total } = req.body;
 
@@ -175,6 +196,7 @@ app.post('/orders', (req, res) => {
 });
 
 
+
 app.get('/api/orders', (req, res) => {
   const sql = 'SELECT * FROM orders ORDER BY id DESC';
 
@@ -184,20 +206,48 @@ app.get('/api/orders', (req, res) => {
       return res.status(500).json({ message: 'Gabim në server gjatë marrjes së porosive.' });
     }
 
-    try {
-      // Parsim i items nga string JSON
-      const parsed = results.map(order => ({
-        ...order,
-        items: JSON.parse(order.items)
-      }));
-
-      res.json(parsed);
-    } catch(parseErr) {
-      console.error('Gabim gjatë parsimit të ushqimeve:', parseErr);
-      res.status(500).json({ message: 'Gabim në server gjatë përpunimit të porosive.' });
-    }
+    res.json(results);  // items është string JSON në DB
   });
 });
+
+
+// Ndrysho statusin e porosisë
+
+
+app.get('/events', (req, res) => {
+  const query = 'SELECT * FROM events ORDER BY date ASC';
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Gabim gjatë marrjes së eventeve:', err);
+      return res.status(500).json({ message: 'Gabim gjatë marrjes së eventeve.' });
+    }
+
+    res.status(200).json(results);
+  });
+});
+
+
+// POST - shto event
+app.post('/events', (req, res) => {
+  const { date, title, description } = req.body;
+
+  if (!date || !title) {
+    return res.status(400).json({ message: 'Date dhe Title janë të nevojshme' });
+  }
+
+  const query = 'INSERT INTO events (date, title, description) VALUES (?, ?, ?)';
+  db.query(query, [date, title, description || ''], (err, result) => {
+    if (err) {
+      console.error('Gabim gjatë shtimit të eventit:', err);
+      return res.status(500).json({ message: 'Gabim gjatë ruajtjes së eventit.' });
+    }
+
+    res.status(201).json({ id: result.insertId, date, title, description });
+  });
+});
+
+
 app.listen(port, () => {
   console.log(`Serveri po funksionon në http://localhost:${port}`);
 });

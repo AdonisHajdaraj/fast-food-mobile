@@ -1,35 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  Alert, Image, ScrollView, StyleSheet, Text, TextInput,
+  TouchableOpacity, View, Platform
 } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
+import WeatherCard from '../user/WeatherCard';
+import { Calendar } from 'react-native-calendars';
 
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
 const NOTCH_HEIGHT = 30;
 
 const API_URL = 'http://localhost:3012/foods';
+const API_EVENTS_URL = Platform.OS === 'android'
+  ? 'http://10.0.2.2:3012/events'
+  : 'http://localhost:3012/events';
 
 const FoodScreen = ({
-  navigateToHome,
-navigateToAboutUs,
-navigateToAdminScreen,
-
- 
-  navigateToAdminMessage,  // Shtuar
+  navigateToHome, navigateToAboutUs, navigateToAdminScreen, navigateToAdminMessage
 }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [foodData, setFoodData] = useState([]);
   const [newFood, setNewFood] = useState({ name: '', description: '', price: '', image_url: '' });
-  const [newMessagesCount, setNewMessagesCount] = useState(3); // Shembull: 3 mesazhe të reja
+  const [newMessagesCount, setNewMessagesCount] = useState(3);
+  const [events, setEvents] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
+  const [selectedDate, setSelectedDate] = useState('');
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -58,10 +57,7 @@ navigateToAdminScreen,
     }
 
     try {
-      await axios.post(API_URL, {
-        ...newFood,
-        price: parseFloat(newFood.price),
-      });
+      await axios.post(API_URL, { ...newFood, price: parseFloat(newFood.price) });
       setNewFood({ name: '', description: '', price: '', image_url: '' });
       fetchFoods();
     } catch (error) {
@@ -71,71 +67,77 @@ navigateToAdminScreen,
 
   const editFood = async (food) => {
     try {
-      await axios.put(`${API_URL}/${food.id}`, {
-        ...food,
-        name: food.name + ' (edited)',
-      });
+      await axios.put(`${API_URL}/${food.id}`, { ...food, name: food.name + ' (edited)' });
       fetchFoods();
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u ndryshua ushqimi');
     }
   };
 
+  const fetchEvents = async () => {
+    try {
+      const res = await axios.get(API_EVENTS_URL);
+      setEvents(res.data);
+      const marks = {};
+      res.data.forEach(ev => {
+        marks[ev.date] = { marked: true, dotColor: 'blue' };
+      });
+      setMarkedDates(marks);
+    } catch (error) {
+      Alert.alert('Gabim', 'Nuk u ngarkuan eventet');
+    }
+  };
+
+  const addEvent = async () => {
+    if (!newEventTitle || !newEventDate) {
+      Alert.alert('Gabim', 'Plotëso Titullin dhe Datën për eventin');
+      return;
+    }
+    try {
+      await axios.post(API_EVENTS_URL, { title: newEventTitle, date: newEventDate });
+      setNewEventTitle('');
+      setNewEventDate('');
+      fetchEvents();
+    } catch (error) {
+      Alert.alert('Gabim', 'Nuk u shtua eventi');
+    }
+  };
+
   useEffect(() => {
     fetchFoods();
+    fetchEvents();
   }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.phoneFrame}>
         <View style={styles.notch} />
-        <View style={styles.statusBar}>
-          <Text style={styles.statusBarText}>9:41 AM</Text>
-        </View>
+        <View style={styles.statusBar}><Text style={styles.statusBarText}>9:41 AM</Text></View>
 
         <View style={styles.appContent}>
           <TouchableOpacity style={styles.sidebarButton} onPress={toggleSidebar}>
             <Text style={styles.buttonText}>☰</Text>
           </TouchableOpacity>
 
-          {/* 🔔 Ikona e ziles */}
           <View style={styles.bellContainer}>
             <TouchableOpacity onPress={navigateToAdminMessage}>
               <Icon name="notifications-outline" size={28} color="#000" />
               {newMessagesCount > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.badgeText}>{newMessagesCount}</Text>
-                </View>
+                <View style={styles.notificationBadge}><Text style={styles.badgeText}>{newMessagesCount}</Text></View>
               )}
             </TouchableOpacity>
           </View>
 
           {isSidebarOpen && (
             <View style={styles.sidebar}>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}>
-                <Text style={styles.sidebarItem}>• Home</Text>
-              </TouchableOpacity>
-
-     
-
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminScreen(); }}>
-                <Text style={styles.sidebarItem}> Admin Panel</Text>
-              </TouchableOpacity>
-
-               <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAboutUs(); }}>
-                <Text style={styles.sidebarItem}>• About us</Text>
-              </TouchableOpacity>
-
-
-       
-
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminMessage(); }}>
-                <Text style={styles.sidebarItem}>• Admin Messages</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={toggleSidebar}>
-                <Text style={styles.sidebarItem}>• Close</Text>
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}><Text style={styles.sidebarItem}>• Home</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminScreen(); }}><Text style={styles.sidebarItem}> Admin Panel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAboutUs(); }}><Text style={styles.sidebarItem}>• About us</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminMessage(); }}><Text style={styles.sidebarItem}>• Admin Messages</Text></TouchableOpacity>
+              <TouchableOpacity onPress={toggleSidebar}><Text style={styles.sidebarItem}>• Close</Text></TouchableOpacity>
+              <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#bbb', paddingTop: 10 }}>
+                <WeatherCard />
+              </View>
             </View>
           )}
 
@@ -143,31 +145,10 @@ navigateToAdminScreen,
             <Text style={styles.title}>Our Menu</Text>
 
             <View style={styles.addSection}>
-              <TextInput
-                style={styles.input}
-                placeholder="Name"
-                value={newFood.name}
-                onChangeText={(text) => setNewFood({ ...newFood, name: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Description"
-                value={newFood.description}
-                onChangeText={(text) => setNewFood({ ...newFood, description: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Price"
-                keyboardType="numeric"
-                value={newFood.price}
-                onChangeText={(text) => setNewFood({ ...newFood, price: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Image URL"
-                value={newFood.image_url}
-                onChangeText={(text) => setNewFood({ ...newFood, image_url: text })}
-              />
+              <TextInput style={styles.input} placeholder="Name" value={newFood.name} onChangeText={(text) => setNewFood({ ...newFood, name: text })} />
+              <TextInput style={styles.input} placeholder="Description" value={newFood.description} onChangeText={(text) => setNewFood({ ...newFood, description: text })} />
+              <TextInput style={styles.input} placeholder="Price" keyboardType="numeric" value={newFood.price} onChangeText={(text) => setNewFood({ ...newFood, price: text })} />
+              <TextInput style={styles.input} placeholder="Image URL" value={newFood.image_url} onChangeText={(text) => setNewFood({ ...newFood, image_url: text })} />
               <TouchableOpacity style={[styles.button, { backgroundColor: '#28a745' }]} onPress={addFood}>
                 <Text style={styles.buttonText}>Add Food</Text>
               </TouchableOpacity>
@@ -179,24 +160,29 @@ navigateToAdminScreen,
                 <Text style={styles.foodName}>{food.name}</Text>
                 <Text style={styles.foodDescription}>{food.description}</Text>
                 <Text style={styles.foodPrice}>${food.price}</Text>
-
-                <TouchableOpacity
-                  style={[styles.button, { backgroundColor: '#007bff' }]}
-                  onPress={() => editFood(food)}>
-                  <Text style={styles.buttonText}>Edit</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.button, { backgroundColor: '#dc3545' }]}
-                  onPress={() => deleteFood(food.id)}>
-                  <Text style={styles.buttonText}>Delete</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, { backgroundColor: '#007bff' }]} onPress={() => editFood(food)}>
+                  <Text style={styles.buttonText}>Edit</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.button, { backgroundColor: '#dc3545' }]} onPress={() => deleteFood(food.id)}>
+                  <Text style={styles.buttonText}>Delete</Text></TouchableOpacity>
               </View>
             ))}
 
-            <TouchableOpacity onPress={navigateToHome}>
-              <Text style={styles.link}>Back to Home</Text>
-            </TouchableOpacity>
+            {/* Event Calendar UI */}
+            <Text style={[styles.title, { marginTop: 40 }]}>Event Calendar</Text>
+            <Calendar
+              onDayPress={day => { setSelectedDate(day.dateString); setNewEventDate(day.dateString); }}
+              markedDates={{ ...markedDates, ...(selectedDate ? { [selectedDate]: { selected: true, selectedColor: 'purple' } } : {}) }}
+            />
+            <View style={{ marginTop: 20 }}>
+              <Text style={{ fontWeight: 'bold' }}>Add New Event</Text>
+              <TextInput placeholder="Event Title" style={styles.input} value={newEventTitle} onChangeText={setNewEventTitle} />
+              <TextInput placeholder="Date (YYYY-MM-DD)" style={styles.input} value={newEventDate} onChangeText={setNewEventDate} />
+              <TouchableOpacity onPress={addEvent} style={[styles.button, { backgroundColor: 'blue' }]}>
+                <Text style={styles.buttonText}>Add Event</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity onPress={navigateToHome}><Text style={styles.link}>Back to Home</Text></TouchableOpacity>
           </ScrollView>
         </View>
       </View>

@@ -1,20 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  Dimensions,
-  Image,
-} from 'react-native';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-const PHONE_WIDTH = 380;
-const PHONE_HEIGHT = 820;
-const NOTCH_HEIGHT = 30;
-
-const socket = io('http://localhost:3012'); // Ndërro IP për telefonin fizik
+const socket = io('http://localhost:3012'); // Ndërro IP/shtetin sipas nevojës
 
 const AdminMessagesScreen = () => {
   const [messages, setMessages] = useState([]);
@@ -31,69 +19,71 @@ const AdminMessagesScreen = () => {
     return () => socket.off('newMessage');
   }, []);
 
+  // Funksioni për të shkuar një hap mbrapa
+  const handleGoBack = () => {
+    window.history.back();
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Frame Telefoni */}
-      <View style={styles.phoneFrame}>
-        {/* Notch */}
-        <View style={styles.notch} />
+    <div style={styles.container}>
+      <div style={styles.phoneFrame}>
+        <div style={styles.notch}></div>
+        <div style={styles.statusBar}>
+          <span style={styles.statusBarText}>9:41 AM</span>
+        </div>
 
-        {/* Status Bar */}
-        <View style={styles.statusBar}>
-          <Text style={styles.statusBarText}>9:41 AM</Text>
-        </View>
+        <div style={styles.appContent}>
+          <h2 style={styles.title}>📥 Mesazhet e përdoruesve</h2>
 
-        {/* Përmbajtja e aplikacionit */}
-        <View style={styles.appContent}>
-          <Text style={styles.title}>📥 Mesazhet e përdoruesve</Text>
+          <button onClick={handleGoBack} style={styles.backButton}>
+            ← Kthehu Mbrapa
+          </button>
 
-          <ScrollView contentContainerStyle={styles.messageContainer}>
+          <div style={styles.messageContainer}>
             {messages.map((m, index) => (
-              <View key={index} style={styles.messageCard}>
-                <Text style={styles.sender}>{m.emri} ({m.email})</Text>
-                <Text style={styles.message}>{m.message}</Text>
-              </View>
+              <div key={index} style={styles.messageCard}>
+                <strong style={styles.sender}>{m.emri} ({m.email})</strong>
+                <p style={styles.message}>{m.message}</p>
+              </div>
             ))}
-          </ScrollView>
-        </View>
-      </View>
-    </View>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-const styles = StyleSheet.create({
+// Styles në objekt javascript (mund t’i kthesh në CSS nëse preferon)
+const styles = {
   container: {
-    flex: 1,
+    display: 'flex',
     backgroundColor: '#333',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
   },
   phoneFrame: {
-    width: PHONE_WIDTH,
-    height: PHONE_HEIGHT,
+    width: 380,
+    height: 820,
     backgroundColor: 'black',
     borderRadius: 50,
-    shadowColor: '#000',
-    shadowOpacity: 0.9,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
+    boxShadow: '0 10px 20px rgba(0,0,0,0.9)',
     overflow: 'hidden',
   },
   notch: {
     width: 200,
-    height: NOTCH_HEIGHT,
+    height: 30,
     backgroundColor: 'black',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    alignSelf: 'center',
-    marginTop: 10,
-    zIndex: 2,
+    margin: '10px auto 0 auto',
   },
   statusBar: {
     height: 20,
     backgroundColor: 'black',
-    alignItems: 'center',
+    display: 'flex',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBarText: {
     color: 'white',
@@ -101,9 +91,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   appContent: {
-    flex: 1,
     backgroundColor: '#f1f1f1',
     padding: 20,
+    height: 740,
+    overflowY: 'auto',
   },
   title: {
     fontSize: 22,
@@ -111,6 +102,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
     color: '#222',
+  },
+  backButton: {
+    marginBottom: 15,
+    padding: '8px 12px',
+    fontSize: 16,
+    cursor: 'pointer',
+    backgroundColor: '#4caf50',
+    border: 'none',
+    color: 'white',
+    borderRadius: 8,
   },
   messageContainer: {
     paddingBottom: 20,
@@ -120,22 +121,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
   sender: {
-    fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
+    display: 'block',
   },
   message: {
     color: '#555',
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 1.4,
   },
-});
+};
 
 export default AdminMessagesScreen;

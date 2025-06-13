@@ -14,18 +14,45 @@ const NOTCH_HEIGHT = 30;
 
 const ForgotPasswordScreen = ({ navigateToHome }) => {
   const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
-  const handleResetPassword = () => {
-    if (email) {
-      Alert.alert(
-        'Password Reset',
-        'Instructions to reset your password have been sent to your email.'
-      );
+  const handleResetPassword = async () => {
+  if (!email || !newPassword) {
+    Alert.alert('Gabim', 'Ju lutemi plotësoni të dy fushat');
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:3012/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, newPassword }),
+    });
+
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error('Nuk ishte JSON:', text);
+      Alert.alert('Gabim', 'Përgjigje e pavlefshme nga serveri');
+      return;
+    }
+
+    if (response.ok) {
+      Alert.alert('Sukses', data.message);
       navigateToHome();
     } else {
-      Alert.alert('Error', 'Please provide an email address');
+      Alert.alert('Gabim', data.message || 'Ndodhi një gabim');
     }
-  };
+  } catch (error) {
+    console.error(error);
+    Alert.alert('Gabim', 'Nuk u arrit të lidhet me serverin');
+  }
+};
+
+
 
   return (
     <View style={styles.container}>
@@ -36,19 +63,27 @@ const ForgotPasswordScreen = ({ navigateToHome }) => {
         </View>
 
         <View style={styles.appContent}>
-          <Text style={styles.title}>Forgot Password</Text>
+          <Text style={styles.title}>Reset Password</Text>
 
           <TextInput
             style={styles.input}
-            placeholder="Enter your email"
+            placeholder="Shkruani email-in"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
+          <TextInput
+            style={styles.input}
+            placeholder="Fjalëkalimi i ri"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+
           <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
-            <Text style={styles.buttonText}>Reset Password</Text>
+            <Text style={styles.buttonText}>Ndrysho Fjalëkalimin</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -59,7 +94,7 @@ const ForgotPasswordScreen = ({ navigateToHome }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333', // sfond jashtë telefonit
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -101,9 +136,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 30,
     color: '#333',
     textAlign: 'center',
   },

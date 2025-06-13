@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 
 // Importimi i Komponentëve për Ekranet
 import AboutUs from '../Screens/user/AboutUs';
@@ -12,6 +14,7 @@ import UFoodScreen from '../Screens/user/UserFoodScreen';
 import HomeScreen from '../Screens/components/HomeScreen';
 import AdminMessagesScreen from '../Screens/admin/AdminMessages';
 import AdminScreen from '../Screens/admin/AdminScreen';
+
 
 export default function App() {
   const [screen, setScreen] = useState('home'); // Përdorim state për të kontrolluar cilin ekran të shfaqim
@@ -84,12 +87,15 @@ export default function App() {
     navigateToHome={navigateToHome}
     navigateToAboutUs={navigateToAboutUs} 
     navigateToContactUs={navigateToContactUs} 
+    
   />
 )}
+
 
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { 

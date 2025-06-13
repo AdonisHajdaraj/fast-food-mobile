@@ -4,28 +4,35 @@ import axios from 'axios';
 
 const ORDER_API_URL = 'http://localhost:3012/api/orders';
 
+const statuses = [
+  { label: 'Të gjitha', value: 'all' },
+  { label: 'Porosi e re', value: 'new' },
+  { label: 'Në dërgim', value: 'in-delivery' },
+  { label: 'E kryer', value: 'completed' },
+];
+
 const AdminScreen = () => {
   const [orders, setOrders] = useState([]);
-  const [activeStatus, setActiveStatus] = useState('new');
   const [loading, setLoading] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+useEffect(() => {
+  fetchOrders(filterStatus);
+}, [filterStatus]);
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(ORDER_API_URL);
-      console.log('Te dhenat nga serveri:', res.data);
-      setOrders(res.data);
-    } catch (error) {
-      console.error('Gabim ne marrjen e porosive:', error);
-      Alert.alert('Gabim', 'Nuk mund të merren porositë');
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchOrders = async (status = 'all') => {
+  try {
+    setLoading(true);
+    const res = await axios.get(ORDER_API_URL, {
+      params: { status }
+    });
+    setOrders(res.data);
+  } catch (error) {
+    Alert.alert('Gabim', 'Nuk mund të merren porositë');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const changeStatus = async (id, newStatus) => {
     try {
@@ -42,8 +49,8 @@ const AdminScreen = () => {
       'A jeni i sigurt që doni ta fshini këtë porosi?',
       [
         { text: 'Jo' },
-        { 
-          text: 'Po', 
+        {
+          text: 'Po',
           onPress: async () => {
             try {
               await axios.delete(`${ORDER_API_URL}/${id}`);
@@ -51,51 +58,94 @@ const AdminScreen = () => {
             } catch (error) {
               Alert.alert('Gabim', 'Fshirja dështoi');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
-  // Për testim, shfaq të gjitha pa filtrim
-  const filteredOrders = orders;
+  const filteredOrders = filterStatus === 'all' ? orders : orders.filter(o => o.status === filterStatus);
+
+  // Butonat e statusit për filtrim
+  const renderFilterButtons = () => {
+    return (
+      <View style={styles.filterButtonsContainer}>
+        {statuses.map((status) => (
+          <TouchableOpacity
+            key={status.value}
+            style={[
+              styles.filterButton,
+              filterStatus === status.value && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilterStatus(status.value)}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filterStatus === status.value && styles.filterButtonTextActive,
+              ]}
+            >
+              {status.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  // Butonat e ndryshimit te statusit per secilen porosi
+  const renderStatusChangeButtons = (order) => {
+    // Statuset qe mund te ndryshohen, per shembull:
+    // Nga 'new' mund te shkoje 'in-delivery' ose 'completed'
+    // Nga 'in-delivery' mund te shkoje 'completed'
+    // Nga 'completed' nuk ndryshon (vetem fshihet)
+    const nextStatuses = [];
+
+    if (order.status === 'new') {
+      nextStatuses.push({ label: 'Në dërgim', value: 'in-delivery' });
+      nextStatuses.push({ label: 'E kryer', value: 'completed' });
+    } else if (order.status === 'in-delivery') {
+      nextStatuses.push({ label: 'E kryer', value: 'completed' });
+    }
+
+    return (
+      <View style={styles.statusButtonsContainer}>
+        {nextStatuses.map((st) => (
+          <TouchableOpacity
+            key={st.value}
+            style={styles.statusChangeButton}
+            onPress={() => changeStatus(order.id, st.value)}
+          >
+            <Text style={styles.statusChangeButtonText}>{st.label}</Text>
+          </TouchableOpacity>
+        ))}
+
+        {order.status === 'completed' && (
+          <TouchableOpacity
+            style={[styles.statusChangeButton, styles.deleteButton]}
+            onPress={() => deleteOrder(order.id)}
+          >
+            <Text style={styles.statusChangeButtonText}>Fshi</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Menaxhimi i Porosive</Text>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity 
-          style={[styles.tab, activeStatus === 'new' && styles.activeTab]} 
-          onPress={() => setActiveStatus('new')}
-        >
-          <Text style={[styles.tabText, activeStatus === 'new' && styles.activeTabText]}>Porosi e re</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.tab, activeStatus === 'in-delivery' && styles.activeTab]} 
-          onPress={() => setActiveStatus('in-delivery')}
-        >
-          <Text style={[styles.tabText, activeStatus === 'in-delivery' && styles.activeTabText]}>Në dërgim</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.tab, activeStatus === 'completed' && styles.activeTab]} 
-          onPress={() => setActiveStatus('completed')}
-        >
-          <Text style={[styles.tabText, activeStatus === 'completed' && styles.activeTabText]}>E kryer</Text>
-        </TouchableOpacity>
-      </View>
+      {renderFilterButtons()}
 
       {loading ? (
-        <ActivityIndicator size="large" color="#2196F3" style={{marginTop: 20}} />
+        <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 20 }} />
       ) : (
         <ScrollView style={styles.scrollView}>
           {filteredOrders.length === 0 && (
             <Text style={styles.noOrders}>Nuk ka porosi për momentin.</Text>
           )}
-          {filteredOrders.map(order => (
+          {filteredOrders.map((order) => (
             <View key={order.id} style={styles.card}>
               <Text style={styles.orderTitle}>Porosia Nr: {order.id}</Text>
               <Text><Text style={styles.bold}>Emri:</Text> {order.name}</Text>
@@ -106,38 +156,11 @@ const AdminScreen = () => {
               {order.items && order.items.map((item, idx) => (
                 <Text key={idx}> - {item.name} (${item.price})</Text>
               ))}
-              <Text style={[styles.bold, {marginTop: 5}]}>
+              <Text style={[styles.bold, { marginTop: 5 }]}>
                 Totali: ${parseFloat(order.total).toFixed(2)}
               </Text>
 
-              <View style={styles.actions}>
-                {order.status === 'new' && (
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
-                    onPress={() => changeStatus(order.id, 'in-delivery')}
-                  >
-                    <Text style={styles.actionText}>Dërgo</Text>
-                  </TouchableOpacity>
-                )}
-
-                {order.status === 'in-delivery' && (
-                  <TouchableOpacity 
-                    style={styles.actionButton} 
-                    onPress={() => changeStatus(order.id, 'completed')}
-                  >
-                    <Text style={styles.actionText}>Krye</Text>
-                  </TouchableOpacity>
-                )}
-
-                {order.status === 'completed' && (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, {backgroundColor: 'red'}]} 
-                    onPress={() => deleteOrder(order.id)}
-                  >
-                    <Text style={styles.actionText}>Fshi</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              {renderStatusChangeButtons(order)}
             </View>
           ))}
         </ScrollView>
@@ -149,11 +172,25 @@ const AdminScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#fafafa' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-  tabs: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
-  tab: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, backgroundColor: '#ddd' },
-  activeTab: { backgroundColor: '#2196F3' },
-  tabText: { fontWeight: 'bold', color: '#555' },
-  activeTabText: { color: 'white' },
+  filterButtonsContainer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 15, flexWrap: 'wrap' },
+  filterButton: {
+    backgroundColor: '#eee',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginHorizontal: 5,
+    marginVertical: 5,
+  },
+  filterButtonActive: {
+    backgroundColor: '#2196F3',
+  },
+  filterButtonText: {
+    color: '#555',
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: 'white',
+  },
   scrollView: { flex: 1 },
   noOrders: { textAlign: 'center', fontSize: 18, color: '#777', marginTop: 20 },
   card: {
@@ -168,15 +205,22 @@ const styles = StyleSheet.create({
   },
   orderTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   bold: { fontWeight: 'bold' },
-  actions: { marginTop: 10, flexDirection: 'row', justifyContent: 'flex-end' },
-  actionButton: {
+  statusButtonsContainer: { flexDirection: 'row', marginTop: 10, flexWrap: 'wrap' },
+  statusChangeButton: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    marginLeft: 8,
+    marginRight: 10,
+    marginBottom: 5,
   },
-  actionText: { color: 'white', fontWeight: 'bold' },
+  statusChangeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+  },
 });
 
 export default AdminScreen;
