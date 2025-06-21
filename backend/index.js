@@ -175,17 +175,14 @@ app.get('/admin/messages', (req, res) => {
 
 app.post('/orders', (req, res) => {
   const { name, location, phone, paymentMethod, items, total } = req.body;
-
   if (!name || !location || !phone || !paymentMethod || !items || !total) {
     return res.status(400).json({ message: 'Të dhënat e porosisë janë të paplota.' });
   }
-
   const sql = `
     INSERT INTO orders 
-    (name, location, phone, payment_method, items, total) 
+    (name, location, phone, paymentMethod, items, total) 
     VALUES (?, ?, ?, ?, ?, ?)
   `;
-
   db.query(sql, [name, location, phone, paymentMethod, JSON.stringify(items), total], (err, result) => {
     if (err) {
       console.error('Gabim gjatë ruajtjes së porosisë:', err); // Ky do të tregojë saktë gabimin
@@ -196,23 +193,42 @@ app.post('/orders', (req, res) => {
 });
 
 
-
 app.get('/api/orders', (req, res) => {
   const sql = 'SELECT * FROM orders ORDER BY id DESC';
-
   db.query(sql, (err, results) => {
     if (err) {
       console.error('Gabim gjatë marrjes së porosive:', err);
       return res.status(500).json({ message: 'Gabim në server gjatë marrjes së porosive.' });
     }
 
-    res.json(results);  // items është string JSON në DB
+    try {
+
+      const parsed = results.map(order => ({
+        ...order,
+        items: JSON.parse(order.items)
+      }));
+      res.json(parsed);
+    } catch(parseErr) {
+      console.error('Gabim gjatë parsimit të ushqimeve:', parseErr);
+      res.status(500).json({ message: 'Gabim në server gjatë përpunimit të porosive.' });
+    }
   });
 });
+app.delete('/api/orders/:id', async (req, res) => {
+  const orderId = req.params.id;
+  try {
+    const [result] = await pool.query('DELETE FROM orders WHERE id = ?', [orderId]);
 
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
 
-// Ndrysho statusin e porosisë
-
+    res.json({ message: 'Order deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 app.get('/events', (req, res) => {
   const query = 'SELECT * FROM events ORDER BY date ASC';

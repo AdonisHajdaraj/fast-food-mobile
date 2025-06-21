@@ -11,30 +11,26 @@ import {
 } from 'react-native';
 import axios from 'axios';
 
-// Nëse po teston në pajisje reale, zëvendëso 'localhost' me IP-në e kompjuterit tënd
 const API_URL = 'http://localhost:3012/contact';
-
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
 const NOTCH_HEIGHT = 30;
 
-const ContactUs = ({ navigateToHome }) => {
+const ContactUs = ({ navigateToUFood }) => {
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+
+  const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
 
   const handleSubmit = async () => {
     if (!name || !email || !message) {
       Alert.alert('Gabim', 'Ju lutem plotësoni të gjitha fushat.');
       return;
     }
-
     try {
-      await axios.post(API_URL, {
-        emri: name,
-        email: email,
-        message: message,  // Këtu duhet "message" që pritet nga backend
-      });
+      await axios.post(API_URL, { emri: name, email, message });
       Alert.alert('Sukses', 'Mesazhi u dërgua me sukses!');
       setName('');
       setEmail('');
@@ -52,9 +48,9 @@ const ContactUs = ({ navigateToHome }) => {
         <View style={styles.statusBar}>
           <Text style={styles.statusBarText}>9:41 AM</Text>
         </View>
+
         <View style={styles.appContent}>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <Text style={styles.title}>Contact Us</Text>
             <Image
               source={{ uri: 'https://cdn-icons-png.flaticon.com/512/561/561127.png' }}
               style={styles.image}
@@ -83,7 +79,8 @@ const ContactUs = ({ navigateToHome }) => {
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>Send Message</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={navigateToHome}>
+
+            <TouchableOpacity style={styles.button} onPress={navigateToUFood}>
               <Text style={styles.buttonText}>Back to Home</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -139,13 +136,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingBottom: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
-    textAlign: 'center',
   },
   subtitle: {
     fontSize: 18,

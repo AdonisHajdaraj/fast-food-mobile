@@ -66,18 +66,18 @@ export default function App() {
       {screen === 'food' && (
         <FoodScreen
           navigateToHome={navigateToHome}
-          navigateToAboutUs={navigateToAboutUs}
+       
           navigateToAdminMessage={navigateToAdminMessages}
           navigateToAdminScreen={navigateToAdminScreen}
         />
       )}
 
       {/* Ekrani About Us dhe Contact Us */}
-      {screen === 'aboutUs' && <AboutUs navigateToHome={navigateToHome} />}
-      {screen === 'contactUs' && <ContactUs navigateToHome={navigateToHome} />}
+      {screen === 'aboutUs' && <AboutUs navigateToUFood={navigateToUFood} />}
+      {screen === 'contactUs' && <ContactUs navigateToUFood={navigateToUFood} />}
   {/* Ekrani Admin Messages */}
-{screen === 'adminMessages' && <AdminMessagesScreen />}
-{screen === 'admin' && <AdminScreen />}
+{screen === 'adminMessages' && <AdminMessagesScreen navigateToFood={navigateToFood}/>}
+{screen === 'admin' && <AdminScreen  navigateToFood={navigateToFood}/>}
 
 
 

@@ -8,11 +8,12 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
+  Platform,
 } from 'react-native';
-import WeatherCard from '../user/WeatherCard';
 import axios from 'axios';
+import WeatherCard from '../user/WeatherCard';
 import { Calendar } from 'react-native-calendars';
-import { Platform } from 'react-native';
+import Sidebar from '..//user/Header';  // Importo Sidebar-in
 
 const API_URL = 'http://localhost:3012/foods';
 const ORDER_API_URL = 'http://localhost:3012/orders';
@@ -42,10 +43,10 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
 
-  // Funksion për nxjerrjen vetëm të pjesës së datës nga datetime string
+  // Nxjerr vetëm datën nga datetime string
   const formatDate = (datetime) => {
     if (!datetime) return '';
-    return datetime.split('T')[0]; // merr vetëm YYYY-MM-DD
+    return datetime.split('T')[0];
   };
 
   useEffect(() => {
@@ -108,7 +109,7 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
     setCheckoutData({ ...checkoutData, [field]: value });
   };
 
- const confirmOrder = async () => {
+  const confirmOrder = async () => {
     const { name, location, phone, paymentMethod } = checkoutData;
     if (!name || !location || !phone || !paymentMethod) {
       Alert.alert('Gabim', 'Ju lutem plotësoni të gjitha fushat.');
@@ -165,33 +166,23 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
             <TouchableOpacity onPress={toggleSidebar}>
               <Text style={styles.headerButton}>☰</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>UFood</Text>
+            <Text style={styles.headerTitle}>Fast Food </Text>
             <TouchableOpacity onPress={navigateToHome}>
               <Text style={styles.headerButton}>🏠</Text>
             </TouchableOpacity>
           </View>
 
           {sidebarVisible && (
-            <View style={styles.sidebar}>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}>
-                <Text style={styles.sidebarItem}>Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAboutUs(); }}>
-                <Text style={styles.sidebarItem}>About Us</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToContactUs(); }}>
-                <Text style={styles.sidebarItem}>Contact Us</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); setActiveScreen('events'); }}>
-                <Text style={styles.sidebarItem}>Events</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={toggleSidebar}>
-                <Text style={[styles.sidebarItem, { color: 'red' }]}>Close</Text>
-              </TouchableOpacity>
-              <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#bbb', paddingTop: 10 }}>
-                <WeatherCard />
-              </View>
-            </View>
+            <Sidebar
+              onNavigateHome={navigateToHome}
+              onNavigateAboutUs={navigateToAboutUs}
+              onNavigateContactUs={navigateToContactUs}
+              onNavigateEvents={() => {
+                setActiveScreen('events');
+                toggleSidebar();
+              }}
+              onClose={toggleSidebar}
+            />
           )}
 
           <ScrollView style={styles.content}>
@@ -210,6 +201,7 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
                 </View>
               ))
             )}
+            
 
             {activeScreen === 'cart' && (
               <>
@@ -235,7 +227,6 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
               </>
             )}
 
-      
             {activeScreen === 'checkout' && (
               <View style={styles.checkoutForm}>
                 <Text style={styles.checkoutTitle}>Konfirmo Porosinë</Text>
@@ -275,8 +266,6 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
                 </TouchableOpacity>
               </View>
             )}
-     
-
 
             {activeScreen === 'events' && (
               <View style={styles.eventsContainer}>
@@ -363,21 +352,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 24,
   },
-  sidebar: {
-    position: 'absolute',
-    top: 70,
-    left: 0,
-    width: 200,
-    backgroundColor: '#ddd',
-    padding: 15,
-    zIndex: 100,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  sidebarItem: {
-    fontSize: 16,
-    marginVertical: 10,
-  },
   content: {
     flex: 1,
     padding: 10,
@@ -439,66 +413,70 @@ const styles = StyleSheet.create({
   },
   checkoutButton: {
     backgroundColor: '#2980b9',
-    marginTop: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
+    padding: 15,
+    marginVertical: 20,
+    borderRadius: 10,
   },
   checkoutButtonText: {
     color: 'white',
-    textAlign: 'center',
     fontWeight: 'bold',
+    fontSize: 18,
+    textAlign: 'center',
   },
   checkoutForm: {
     padding: 10,
   },
   checkoutTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 15,
     textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginBottom: 10,
+    borderColor: '#bbb',
     borderRadius: 5,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    height: 40,
   },
   confirmButton: {
     backgroundColor: '#27ae60',
-    paddingVertical: 10,
+    padding: 12,
     borderRadius: 5,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   confirmButtonText: {
     color: 'white',
-    textAlign: 'center',
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   cancelButton: {
-    backgroundColor: '#c0392b',
-    paddingVertical: 10,
+    backgroundColor: '#e74c3c',
+    padding: 12,
     borderRadius: 5,
+    marginVertical: 10,
   },
   cancelButtonText: {
     color: 'white',
-    textAlign: 'center',
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   eventsContainer: {
-    marginTop: 10,
+    padding: 10,
   },
   footer: {
-    height: 50,
-    backgroundColor: '#2e86de',
+    height: 60,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
   },
   footerButton: {
-    color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#2e86de',
   },
 });
 

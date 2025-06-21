@@ -7,6 +7,7 @@ import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import WeatherCard from '../user/WeatherCard';
 import { Calendar } from 'react-native-calendars';
+import TaskManager from '../admin/TaskManager';  // Importi i TaskManager
 
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
@@ -18,7 +19,7 @@ const API_EVENTS_URL = Platform.OS === 'android'
   : 'http://localhost:3012/events';
 
 const FoodScreen = ({
-  navigateToHome, navigateToAboutUs, navigateToAdminScreen, navigateToAdminMessage
+  navigateToHome, navigateToAdminScreen, navigateToAdminMessage
 }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [foodData, setFoodData] = useState([]);
@@ -29,6 +30,7 @@ const FoodScreen = ({
   const [selectedDate, setSelectedDate] = useState('');
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
+  const [showTaskManager, setShowTaskManager] = useState(false);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -130,60 +132,115 @@ const FoodScreen = ({
 
           {isSidebarOpen && (
             <View style={styles.sidebar}>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}><Text style={styles.sidebarItem}>• Home</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminScreen(); }}><Text style={styles.sidebarItem}> Admin Panel</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAboutUs(); }}><Text style={styles.sidebarItem}>• About us</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminMessage(); }}><Text style={styles.sidebarItem}>• Admin Messages</Text></TouchableOpacity>
-              <TouchableOpacity onPress={toggleSidebar}><Text style={styles.sidebarItem}>• Close</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}>
+                <Text style={styles.sidebarItem}>• Home</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminScreen(); }}>
+                <Text style={styles.sidebarItem}>• Admin Panel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminMessage(); }}>
+                <Text style={styles.sidebarItem}>• Admin Messages</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { toggleSidebar(); setShowTaskManager(true); }}>
+                <Text style={styles.sidebarItem}>• Task Manager</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={toggleSidebar}>
+                <Text style={styles.sidebarItem}>• Close</Text>
+              </TouchableOpacity>
+
+              {/* Logout button */}
+              <TouchableOpacity
+                onPress={() => {
+                  toggleSidebar();
+                  navigateToHome();
+                }}
+                style={{ marginTop: 30 }}
+              >
+                <Text style={[styles.sidebarItem, { color: '#e53935', fontWeight: 'bold' }]}>• Logout</Text>
+              </TouchableOpacity>
+
               <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#bbb', paddingTop: 10 }}>
                 <WeatherCard />
               </View>
             </View>
           )}
 
-          <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 60 }}>
-            <Text style={styles.title}>Our Menu</Text>
-
-            <View style={styles.addSection}>
-              <TextInput style={styles.input} placeholder="Name" value={newFood.name} onChangeText={(text) => setNewFood({ ...newFood, name: text })} />
-              <TextInput style={styles.input} placeholder="Description" value={newFood.description} onChangeText={(text) => setNewFood({ ...newFood, description: text })} />
-              <TextInput style={styles.input} placeholder="Price" keyboardType="numeric" value={newFood.price} onChangeText={(text) => setNewFood({ ...newFood, price: text })} />
-              <TextInput style={styles.input} placeholder="Image URL" value={newFood.image_url} onChangeText={(text) => setNewFood({ ...newFood, image_url: text })} />
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#28a745' }]} onPress={addFood}>
-                <Text style={styles.buttonText}>Add Food</Text>
+          {showTaskManager ? (
+            <View style={{ flex: 1 }}>
+              <TouchableOpacity onPress={() => setShowTaskManager(false)} style={[styles.button, { backgroundColor: 'red', marginBottom: 10 }]}>
+                <Text style={styles.buttonText}>Close Task Manager</Text>
               </TouchableOpacity>
+              <TaskManager />
             </View>
+          ) : (
+            <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 60 }}>
+              <Text style={styles.title}>Our Menu</Text>
 
-            {foodData.map((food) => (
-              <View key={food.id} style={styles.foodItem}>
-                <Image source={{ uri: food.image_url }} style={styles.foodImage} />
-                <Text style={styles.foodName}>{food.name}</Text>
-                <Text style={styles.foodDescription}>{food.description}</Text>
-                <Text style={styles.foodPrice}>${food.price}</Text>
-                <TouchableOpacity style={[styles.button, { backgroundColor: '#007bff' }]} onPress={() => editFood(food)}>
-                  <Text style={styles.buttonText}>Edit</Text></TouchableOpacity>
-                <TouchableOpacity style={[styles.button, { backgroundColor: '#dc3545' }]} onPress={() => deleteFood(food.id)}>
-                  <Text style={styles.buttonText}>Delete</Text></TouchableOpacity>
+              <View style={styles.addSection}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  value={newFood.name}
+                  onChangeText={(text) => setNewFood({ ...newFood, name: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Description"
+                  value={newFood.description}
+                  onChangeText={(text) => setNewFood({ ...newFood, description: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Price"
+                  keyboardType="numeric"
+                  value={newFood.price}
+                  onChangeText={(text) => setNewFood({ ...newFood, price: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Image URL"
+                  value={newFood.image_url}
+                  onChangeText={(text) => setNewFood({ ...newFood, image_url: text })}
+                />
+                <TouchableOpacity style={[styles.button, { backgroundColor: '#28a745' }]} onPress={addFood}>
+                  <Text style={styles.buttonText}>Add Food</Text>
+                </TouchableOpacity>
               </View>
-            ))}
 
-            {/* Event Calendar UI */}
-            <Text style={[styles.title, { marginTop: 40 }]}>Event Calendar</Text>
-            <Calendar
-              onDayPress={day => { setSelectedDate(day.dateString); setNewEventDate(day.dateString); }}
-              markedDates={{ ...markedDates, ...(selectedDate ? { [selectedDate]: { selected: true, selectedColor: 'purple' } } : {}) }}
-            />
-            <View style={{ marginTop: 20 }}>
-              <Text style={{ fontWeight: 'bold' }}>Add New Event</Text>
-              <TextInput placeholder="Event Title" style={styles.input} value={newEventTitle} onChangeText={setNewEventTitle} />
-              <TextInput placeholder="Date (YYYY-MM-DD)" style={styles.input} value={newEventDate} onChangeText={setNewEventDate} />
-              <TouchableOpacity onPress={addEvent} style={[styles.button, { backgroundColor: 'blue' }]}>
-                <Text style={styles.buttonText}>Add Event</Text>
+              {foodData.map((food) => (
+                <View key={food.id} style={styles.foodItem}>
+                  <Image source={{ uri: food.image_url }} style={styles.foodImage} />
+                  <Text style={styles.foodName}>{food.name}</Text>
+                  <Text style={styles.foodDescription}>{food.description}</Text>
+                  <Text style={styles.foodPrice}>${food.price}</Text>
+                  <TouchableOpacity style={[styles.button, { backgroundColor: '#007bff' }]} onPress={() => editFood(food)}>
+                    <Text style={styles.buttonText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, { backgroundColor: '#dc3545' }]} onPress={() => deleteFood(food.id)}>
+                    <Text style={styles.buttonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              <Text style={[styles.title, { marginTop: 40 }]}>Event Calendar</Text>
+              <Calendar
+                onDayPress={day => { setSelectedDate(day.dateString); setNewEventDate(day.dateString); }}
+                markedDates={{ ...markedDates, ...(selectedDate ? { [selectedDate]: { selected: true, selectedColor: 'purple' } } : {}) }}
+              />
+              <View style={{ marginTop: 20 }}>
+                <Text style={{ fontWeight: 'bold' }}>Add New Event</Text>
+                <TextInput placeholder="Event Title" style={styles.input} value={newEventTitle} onChangeText={setNewEventTitle} />
+                <TextInput placeholder="Date (YYYY-MM-DD)" style={styles.input} value={newEventDate} onChangeText={setNewEventDate} />
+                <TouchableOpacity onPress={addEvent} style={[styles.button, { backgroundColor: 'blue' }]}>
+                  <Text style={styles.buttonText}>Add Event</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity onPress={navigateToHome}>
+                <Text style={styles.link}>Back to Home</Text>
               </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity onPress={navigateToHome}><Text style={styles.link}>Back to Home</Text></TouchableOpacity>
-          </ScrollView>
+            </ScrollView>
+          )}
         </View>
       </View>
     </View>
@@ -193,19 +250,37 @@ const FoodScreen = ({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#333', alignItems: 'center', justifyContent: 'center' },
   phoneFrame: {
-    width: PHONE_WIDTH, height: PHONE_HEIGHT, backgroundColor: 'black', borderRadius: 50,
-    shadowColor: '#000', shadowOpacity: 0.9, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, overflow: 'hidden'
+    width: PHONE_WIDTH,
+    height: PHONE_HEIGHT,
+    backgroundColor: 'black',
+    borderRadius: 50,
+    shadowColor: '#000',
+    shadowOpacity: 0.9,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    overflow: 'hidden',
   },
   notch: {
-    width: 200, height: NOTCH_HEIGHT, backgroundColor: 'black',
-    borderBottomLeftRadius: 20, borderBottomRightRadius: 20, alignSelf: 'center', marginTop: 10, zIndex: 2
+    width: 200,
+    height: NOTCH_HEIGHT,
+    backgroundColor: 'black',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    alignSelf: 'center',
+    marginTop: 10,
+    zIndex: 2,
   },
   statusBar: { height: 20, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center' },
   statusBarText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
   appContent: { flex: 1, backgroundColor: '#f5f5f5', padding: 20, paddingTop: 0 },
   sidebarButton: {
-    position: 'absolute', top: 10, left: 10, backgroundColor: '#4CAF50',
-    padding: 10, borderRadius: 5, zIndex: 10,
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+    zIndex: 10,
   },
   bellContainer: {
     position: 'absolute',
@@ -219,45 +294,81 @@ const styles = StyleSheet.create({
     top: -6,
     backgroundColor: 'red',
     borderRadius: 10,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    minWidth: 18,
+    width: 18,
+    height: 18,
     alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
   },
-  badgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
+  badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
   sidebar: {
-    position: 'absolute', top: 0, left: 0, bottom: 0, width: 250,
-    backgroundColor: '#333', paddingTop: 60, paddingLeft: 20, zIndex: 9,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 220,
+    height: '100%',
+    backgroundColor: '#eee',
+    padding: 20,
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
-  sidebarItem: { color: '#fff', fontSize: 20, marginBottom: 20 },
-  scrollContainer: { flex: 1, marginTop: 10 },
-  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 30, color: '#333' },
-  addSection: { marginBottom: 30 },
+  sidebarItem: {
+    fontSize: 18,
+    marginVertical: 10,
+  },
+  scrollContainer: {
+    flex: 1,
+    marginTop: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  addSection: {
+    marginBottom: 30,
+    backgroundColor: '#fafafa',
+    padding: 15,
+    borderRadius: 10,
+  },
   input: {
-    height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 10,
-    paddingHorizontal: 10, borderRadius: 5, backgroundColor: '#fff'
+    backgroundColor: '#fff',
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 6,
+    borderColor: '#ddd',
+    borderWidth: 1,
   },
-  foodItem: {
-    marginBottom: 20, backgroundColor: '#fff', borderRadius: 10, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 3 },
-    padding: 15
-  },
-  foodImage: { width: '100%', height: 180, borderRadius: 10, marginBottom: 10 },
-  foodName: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
-  foodDescription: { fontSize: 14, color: '#666', marginBottom: 5 },
-  foodPrice: { fontSize: 16, fontWeight: 'bold', color: '#4CAF50', marginBottom: 10 },
   button: {
-    paddingVertical: 10, borderRadius: 5, marginBottom: 10, alignItems: 'center'
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginVertical: 5,
   },
   buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  link: {
-    textAlign: 'center', color: '#007bff', fontSize: 16, marginTop: 20,
-    textDecorationLine: 'underline',
+  foodItem: {
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    borderRadius: 12,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
   },
+  foodImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  foodName: { fontSize: 22, fontWeight: 'bold' },
+  foodDescription: { fontSize: 14, color: '#555', marginBottom: 5 },
+  foodPrice: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  link: { color: '#007bff', marginTop: 30, fontSize: 18, textAlign: 'center' },
 });
 
 export default FoodScreen;

@@ -12,7 +12,7 @@ const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
 const NOTCH_HEIGHT = 30;
 
-const AboutUsScreen = ({ navigateToHome }) => {
+const AboutUsScreen = ({ navigateToUFood }) => {
   return (
     <View style={styles.container}>
       {/* Phone Frame */}
@@ -53,7 +53,7 @@ const AboutUsScreen = ({ navigateToHome }) => {
               a brand that is synonymous with quality, convenience, and satisfaction.
             </Text>
 
-            <TouchableOpacity style={styles.button} onPress={navigateToHome}>
+            <TouchableOpacity style={styles.button} onPress={navigateToUFood}>
               <Text style={styles.buttonText}>Back to Home</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -66,7 +66,7 @@ const AboutUsScreen = ({ navigateToHome }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333', // sfondi jashtë telefonit
+    backgroundColor: '#333',
     alignItems: 'center',
     justifyContent: 'center',
   },

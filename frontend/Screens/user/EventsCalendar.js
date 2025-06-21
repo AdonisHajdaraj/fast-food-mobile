@@ -31,6 +31,7 @@ const EventsScreen = () => {
 
   return (
     <View style={styles.container}>
+      
       <Text style={styles.title}>ghghg</Text>
       <Calendar
         markedDates={events}
