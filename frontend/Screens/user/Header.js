@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import WeatherCard from '../user/WeatherCard'; // kontrollo rrugën në varësi të strukturës sate
+import Icon from 'react-native-vector-icons/Ionicons';
+import WeatherCard from '../user/WeatherCard';
 
 const Sidebar = ({
   onNavigateHome,
@@ -10,47 +11,77 @@ const Sidebar = ({
   onClose,
 }) => {
   return (
-    <View style={styles.sidebar}>
-      <TouchableOpacity onPress={() => { onClose(); onNavigateHome(); }}>
-        <Text style={styles.sidebarItem}>Home</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => { onClose(); onNavigateAboutUs(); }}>
-        <Text style={styles.sidebarItem}>About Us</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => { onClose(); onNavigateContactUs(); }}>
-        <Text style={styles.sidebarItem}>Contact Us</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => { onClose(); onNavigateEvents(); }}>
-        <Text style={styles.sidebarItem}>Events</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onClose}>
-        <Text style={[styles.sidebarItem, { color: 'red' }]}>Close</Text>
-      </TouchableOpacity>
-      
-      
+    <View style={styles.sidebarContainer}>
+      <View style={styles.sidebarCard}>
+        <SidebarItem icon="home-outline" label="Home" onPress={() => { onClose(); onNavigateHome(); }} />
+        <SidebarItem icon="information-circle-outline" label="About Us" onPress={() => { onClose(); onNavigateAboutUs(); }} />
+        <SidebarItem icon="call-outline" label="Contact Us" onPress={() => { onClose(); onNavigateContactUs(); }} />
+        <SidebarItem icon="calendar-outline" label="Events" onPress={() => { onClose(); onNavigateEvents(); }} />
+        <View style={styles.divider} />
+        <SidebarItem icon="close-outline" label="Close" onPress={onClose} color="#e74c3c" />
+      </View>
 
-      <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#bbb', paddingTop: 10 }}>
+      <View style={styles.weatherSection}>
         <WeatherCard />
       </View>
     </View>
   );
 };
 
+const SidebarItem = ({ icon, label, onPress, color = '#34495e' }) => (
+  <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
+    <Icon name={icon} size={26} color={color} style={styles.icon} />
+    <Text style={[styles.itemText, { color }]}>{label}</Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
-  sidebar: {
+  sidebarContainer: {
     position: 'absolute',
     top: 70,
     left: 0,
-    width: 200,
-    backgroundColor: '#ddd',
-    padding: 15,
-    zIndex: 100,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    width: 280,
+    backgroundColor: '#fefefe',
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 5, height: 5 },
+    elevation: 12,
+    paddingVertical: 25,
+    paddingHorizontal: 20,
+    zIndex: 110,
   },
-  sidebarItem: {
-    fontSize: 16,
-    marginVertical: 10,
+  sidebarCard: {
+    // Empty container to hold items nicely spaced
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e8ee',
+    marginHorizontal: -20, // negate paddingHorizontal for full width
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  icon: {
+    width: 30,
+  },
+  itemText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 18,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#dfe6e9',
+    marginVertical: 20,
+  },
+  weatherSection: {
+    marginTop: 30,
+    paddingHorizontal: 10,
   },
 });
 

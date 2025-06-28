@@ -1,38 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert, Image, ScrollView, StyleSheet, Text, TextInput,
-  TouchableOpacity, View, Platform
+  TouchableOpacity, View, Modal
 } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
-import WeatherCard from '../user/WeatherCard';
-import { Calendar } from 'react-native-calendars';
-import TaskManager from '../admin/TaskManager';  // Importi i TaskManager
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
-const NOTCH_HEIGHT = 30;
+const NOTCH_HEIGHT = 35;
+
 
 const API_URL = 'http://localhost:3012/foods';
-const API_EVENTS_URL = Platform.OS === 'android'
-  ? 'http://10.0.2.2:3012/events'
-  : 'http://localhost:3012/events';
+const API_EVENTS_URL = 'http://localhost:3012/events';
 
 const FoodScreen = ({
-  navigateToHome, navigateToAdminScreen, navigateToAdminMessage
+  navigateToHome,
+  navigateToAdminScreen,
+  navigateToAdminMessage,
+  navigateToTasks,
+  navigateToLogin,
 }) => {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [foodData, setFoodData] = useState([]);
   const [newFood, setNewFood] = useState({ name: '', description: '', price: '', image_url: '' });
-  const [newMessagesCount, setNewMessagesCount] = useState(3);
+  const [editingFood, setEditingFood] = useState(null); // <-- shtuar për edit
   const [events, setEvents] = useState([]);
-  const [markedDates, setMarkedDates] = useState({});
-  const [selectedDate, setSelectedDate] = useState('');
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
-  const [showTaskManager, setShowTaskManager] = useState(false);
-
-  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  const [modalVisibleFood, setModalVisibleFood] = useState(false);
+  const [modalVisibleEvent, setModalVisibleEvent] = useState(false);
 
   const fetchFoods = async () => {
     try {
@@ -44,12 +41,24 @@ const FoodScreen = ({
   };
 
   const deleteFood = async (id) => {
-    try {
-      await axios.delete(`${API_URL}/${id}`);
-      setFoodData(foodData.filter(item => item.id !== id));
-    } catch (error) {
-      Alert.alert('Gabim', 'Nuk u fshi ushqimi');
-    }
+    Alert.alert(
+      'Konfirmim',
+      'A jeni i sigurt që doni të fshini ushqimin?',
+      [
+        { text: 'Jo' },
+        {
+          text: 'Po',
+          onPress: async () => {
+            try {
+              await axios.delete(`${API_URL}/${id}`);
+              setFoodData(foodData.filter(item => item.id !== id));
+            } catch (error) {
+              Alert.alert('Gabim', 'Nuk u fshi ushqimi');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const addFood = async () => {
@@ -57,34 +66,45 @@ const FoodScreen = ({
       Alert.alert('Gabim', 'Plotëso të gjitha fushat!');
       return;
     }
-
     try {
       await axios.post(API_URL, { ...newFood, price: parseFloat(newFood.price) });
       setNewFood({ name: '', description: '', price: '', image_url: '' });
+      setModalVisibleFood(false);
       fetchFoods();
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u shtua ushqimi');
     }
   };
 
-  const editFood = async (food) => {
+  const updateFood = async () => {
+    if (!editingFood.name || !editingFood.price || !editingFood.image_url) {
+      Alert.alert('Gabim', 'Plotëso të gjitha fushat!');
+      return;
+    }
     try {
-      await axios.put(`${API_URL}/${food.id}`, { ...food, name: food.name + ' (edited)' });
+      await axios.put(`${API_URL}/${editingFood.id}`, {
+        name: editingFood.name,
+        description: editingFood.description,
+        price: parseFloat(editingFood.price),
+        image_url: editingFood.image_url,
+      });
+      setEditingFood(null);
+      setModalVisibleFood(false);
       fetchFoods();
     } catch (error) {
-      Alert.alert('Gabim', 'Nuk u ndryshua ushqimi');
+      Alert.alert('Gabim', 'Nuk u përditësua ushqimi');
     }
+  };
+
+  const openEditModal = (food) => {
+    setEditingFood({ ...food, price: String(food.price) }); // price në string për TextInput
+    setModalVisibleFood(true);
   };
 
   const fetchEvents = async () => {
     try {
       const res = await axios.get(API_EVENTS_URL);
       setEvents(res.data);
-      const marks = {};
-      res.data.forEach(ev => {
-        marks[ev.date] = { marked: true, dotColor: 'blue' };
-      });
-      setMarkedDates(marks);
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u ngarkuan eventet');
     }
@@ -99,10 +119,32 @@ const FoodScreen = ({
       await axios.post(API_EVENTS_URL, { title: newEventTitle, date: newEventDate });
       setNewEventTitle('');
       setNewEventDate('');
+      setModalVisibleEvent(false);
       fetchEvents();
     } catch (error) {
       Alert.alert('Gabim', 'Nuk u shtua eventi');
     }
+  };
+
+  const deleteEvent = async (id) => {
+    Alert.alert(
+      'Fshi Eventin',
+      'A doni me të vërtetë të fshini këtë event?',
+      [
+        { text: 'Anulo' },
+        {
+          text: 'Fshi',
+          onPress: async () => {
+            try {
+              await axios.delete(`${API_EVENTS_URL}/${id}`);
+              setEvents(events.filter(ev => ev.id !== id));
+            } catch (error) {
+              Alert.alert('Gabim', 'Nuk u fshi eventi');
+            }
+          }
+        }
+      ]
+    );
   };
 
   useEffect(() => {
@@ -113,134 +155,189 @@ const FoodScreen = ({
   return (
     <View style={styles.container}>
       <View style={styles.phoneFrame}>
-        <View style={styles.notch} />
-        <View style={styles.statusBar}><Text style={styles.statusBarText}>9:41 AM</Text></View>
-
+        <View style={styles.notch}>
+          <Text style={styles.statusBarText}>9:41 AM</Text>
+        </View>
         <View style={styles.appContent}>
-          <TouchableOpacity style={styles.sidebarButton} onPress={toggleSidebar}>
-            <Text style={styles.buttonText}>☰</Text>
-          </TouchableOpacity>
+          <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 100 }}>
+            <Text style={styles.title}>Our Menu</Text>
 
-          <View style={styles.bellContainer}>
-            <TouchableOpacity onPress={navigateToAdminMessage}>
-              <Icon name="notifications-outline" size={28} color="#000" />
-              {newMessagesCount > 0 && (
-                <View style={styles.notificationBadge}><Text style={styles.badgeText}>{newMessagesCount}</Text></View>
-              )}
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#28a745' }]}
+              onPress={() => {
+                setNewFood({ name: '', description: '', price: '', image_url: '' });
+                setEditingFood(null);
+                setModalVisibleFood(true);
+              }}
+            >
+              <Text style={styles.buttonText}>Add Food</Text>
             </TouchableOpacity>
-          </View>
 
-          {isSidebarOpen && (
-            <View style={styles.sidebar}>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToHome(); }}>
-                <Text style={styles.sidebarItem}>• Home</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminScreen(); }}>
-                <Text style={styles.sidebarItem}>• Admin Panel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); navigateToAdminMessage(); }}>
-                <Text style={styles.sidebarItem}>• Admin Messages</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { toggleSidebar(); setShowTaskManager(true); }}>
-                <Text style={styles.sidebarItem}>• Task Manager</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={toggleSidebar}>
-                <Text style={styles.sidebarItem}>• Close</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#007bff' }]}
+              onPress={() => setModalVisibleEvent(true)}
+            >
+              <Text style={styles.buttonText}>Add Event</Text>
+            </TouchableOpacity>
 
-              {/* Logout button */}
-              <TouchableOpacity
-                onPress={() => {
-                  toggleSidebar();
-                  navigateToHome();
-                }}
-                style={{ marginTop: 30 }}
-              >
-                <Text style={[styles.sidebarItem, { color: '#e53935', fontWeight: 'bold' }]}>• Logout</Text>
-              </TouchableOpacity>
+            {foodData.map(food => (
+              <View key={food.id} style={styles.foodItem}>
+                <Image source={{ uri: food.image_url }} style={styles.foodImage} />
+                <Text style={styles.foodName}>{food.name}</Text>
+                <Text style={styles.foodDescription}>{food.description}</Text>
+                <Text style={styles.foodPrice}>${food.price}</Text>
 
-              <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#bbb', paddingTop: 10 }}>
-                <WeatherCard />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#007bff', flex: 1, marginRight: 6 }]}
+                    onPress={() => openEditModal(food)}
+                  >
+                    <Text style={styles.buttonText}>Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#dc3545', flex: 1, marginLeft: 6 }]}
+                    onPress={() => deleteFood(food.id)}
+                  >
+                    <Text style={styles.buttonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
+            ))}
 
-          {showTaskManager ? (
-            <View style={{ flex: 1 }}>
-              <TouchableOpacity onPress={() => setShowTaskManager(false)} style={[styles.button, { backgroundColor: 'red', marginBottom: 10 }]}>
-                <Text style={styles.buttonText}>Close Task Manager</Text>
-              </TouchableOpacity>
-              <TaskManager />
-            </View>
-          ) : (
-            <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 60 }}>
-              <Text style={styles.title}>Our Menu</Text>
+            {events.map(event => (
+              <View key={event.id} style={styles.foodItem}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={styles.foodName}>{event.title}</Text>
+                  <TouchableOpacity onPress={() => deleteEvent(event.id)}>
+                    <MaterialIcons name="delete" size={24} color="#dc3545" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.foodDescription}>Date: {event.date}</Text>
+              </View>
+            ))}
+          </ScrollView>
 
-              <View style={styles.addSection}>
+          {/* Modal për Add dhe Edit Food (një modal për të dyja) */}
+          <Modal visible={modalVisibleFood} transparent animationType="fade">
+            <View style={styles.modalBackground}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>{editingFood ? 'Edit Food' : 'Add New Food'}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Name"
-                  value={newFood.name}
-                  onChangeText={(text) => setNewFood({ ...newFood, name: text })}
+                  value={editingFood ? editingFood.name : newFood.name}
+                  onChangeText={(text) => {
+                    if (editingFood) setEditingFood({ ...editingFood, name: text });
+                    else setNewFood({ ...newFood, name: text });
+                  }}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Description"
-                  value={newFood.description}
-                  onChangeText={(text) => setNewFood({ ...newFood, description: text })}
+                  value={editingFood ? editingFood.description : newFood.description}
+                  onChangeText={(text) => {
+                    if (editingFood) setEditingFood({ ...editingFood, description: text });
+                    else setNewFood({ ...newFood, description: text });
+                  }}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Price"
                   keyboardType="numeric"
-                  value={newFood.price}
-                  onChangeText={(text) => setNewFood({ ...newFood, price: text })}
+                  value={editingFood ? editingFood.price : newFood.price}
+                  onChangeText={(text) => {
+                    if (editingFood) setEditingFood({ ...editingFood, price: text });
+                    else setNewFood({ ...newFood, price: text });
+                  }}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Image URL"
-                  value={newFood.image_url}
-                  onChangeText={(text) => setNewFood({ ...newFood, image_url: text })}
+                  value={editingFood ? editingFood.image_url : newFood.image_url}
+                  onChangeText={(text) => {
+                    if (editingFood) setEditingFood({ ...editingFood, image_url: text });
+                    else setNewFood({ ...newFood, image_url: text });
+                  }}
                 />
-                <TouchableOpacity style={[styles.button, { backgroundColor: '#28a745' }]} onPress={addFood}>
-                  <Text style={styles.buttonText}>Add Food</Text>
-                </TouchableOpacity>
-              </View>
-
-              {foodData.map((food) => (
-                <View key={food.id} style={styles.foodItem}>
-                  <Image source={{ uri: food.image_url }} style={styles.foodImage} />
-                  <Text style={styles.foodName}>{food.name}</Text>
-                  <Text style={styles.foodDescription}>{food.description}</Text>
-                  <Text style={styles.foodPrice}>${food.price}</Text>
-                  <TouchableOpacity style={[styles.button, { backgroundColor: '#007bff' }]} onPress={() => editFood(food)}>
-                    <Text style={styles.buttonText}>Edit</Text>
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.button, { flex: 1, backgroundColor: editingFood ? '#007bff' : '#28a745', marginRight: 8 }]}
+                    onPress={editingFood ? updateFood : addFood}
+                  >
+                    <Text style={styles.buttonText}>{editingFood ? 'Update' : 'Save'}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.button, { backgroundColor: '#dc3545' }]} onPress={() => deleteFood(food.id)}>
-                    <Text style={styles.buttonText}>Delete</Text>
+                  <TouchableOpacity
+                    style={[styles.button, { flex: 1, backgroundColor: '#ccc' }]}
+                    onPress={() => {
+                      setModalVisibleFood(false);
+                      setEditingFood(null);
+                      setNewFood({ name: '', description: '', price: '', image_url: '' });
+                    }}
+                  >
+                    <Text style={[styles.buttonText, { color: '#333' }]}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
-              ))}
-
-              <Text style={[styles.title, { marginTop: 40 }]}>Event Calendar</Text>
-              <Calendar
-                onDayPress={day => { setSelectedDate(day.dateString); setNewEventDate(day.dateString); }}
-                markedDates={{ ...markedDates, ...(selectedDate ? { [selectedDate]: { selected: true, selectedColor: 'purple' } } : {}) }}
-              />
-              <View style={{ marginTop: 20 }}>
-                <Text style={{ fontWeight: 'bold' }}>Add New Event</Text>
-                <TextInput placeholder="Event Title" style={styles.input} value={newEventTitle} onChangeText={setNewEventTitle} />
-                <TextInput placeholder="Date (YYYY-MM-DD)" style={styles.input} value={newEventDate} onChangeText={setNewEventDate} />
-                <TouchableOpacity onPress={addEvent} style={[styles.button, { backgroundColor: 'blue' }]}>
-                  <Text style={styles.buttonText}>Add Event</Text>
-                </TouchableOpacity>
               </View>
+            </View>
+          </Modal>
 
-              <TouchableOpacity onPress={navigateToHome}>
-                <Text style={styles.link}>Back to Home</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          )}
+          <Modal visible={modalVisibleEvent} transparent animationType="fade">
+            <View style={styles.modalBackground}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Add Event</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Event Title"
+                  value={newEventTitle}
+                  onChangeText={(text) => setNewEventTitle(text)}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="YYYY-MM-DD"
+                  value={newEventDate}
+                  onChangeText={(text) => setNewEventDate(text)}
+                />
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.button, { flex: 1, backgroundColor: '#007bff', marginRight: 8 }]}
+                    onPress={addEvent}
+                  >
+                    <Text style={styles.buttonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, { flex: 1, backgroundColor: '#ccc' }]}
+                    onPress={() => setModalVisibleEvent(false)}
+                  >
+                    <Text style={[styles.buttonText, { color: '#333' }]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          <View style={styles.bottomNav}>
+            <TouchableOpacity style={styles.navItem} onPress={navigateToHome}>
+              <Icon name="home-outline" size={28} color="#333" />
+              <Text style={styles.navText}>Home</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem} onPress={navigateToAdminScreen}>
+              <Icon name="settings-outline" size={28} color="#333" />
+              <Text style={styles.navText}>Admin</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem} onPress={navigateToAdminMessage}>
+              <Icon name="chatbubble-ellipses-outline" size={28} color="#333" />
+              <Text style={styles.navText}>Messages</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem} onPress={navigateToTasks}>
+              <Icon name="list-outline" size={28} color="#333" />
+              <Text style={styles.navText}>Tasks</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem} onPress={navigateToLogin}>
+              <Icon name="log-out-outline" size={28} color="#e53935" />
+              <Text style={[styles.navText, { color: '#e53935' }]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -252,7 +349,7 @@ const styles = StyleSheet.create({
   phoneFrame: {
     width: PHONE_WIDTH,
     height: PHONE_HEIGHT,
-    backgroundColor: 'black',
+    backgroundColor: '#fff',
     borderRadius: 50,
     shadowColor: '#000',
     shadowOpacity: 0.9,
@@ -261,114 +358,80 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   notch: {
-    width: 200,
+    width: 210,
     height: NOTCH_HEIGHT,
-    backgroundColor: 'black',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     alignSelf: 'center',
-    marginTop: 10,
-    zIndex: 2,
-  },
-  statusBar: { height: 20, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center' },
-  statusBarText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
-  appContent: { flex: 1, backgroundColor: '#f5f5f5', padding: 20, paddingTop: 0 },
-  sidebarButton: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    zIndex: 10,
-  },
-  bellContainer: {
-    position: 'absolute',
-    top: 10,
-    right: 20,
-    zIndex: 10,
-  },
-  notificationBadge: {
-    position: 'absolute',
-    right: -6,
-    top: -6,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    width: 18,
-    height: 18,
-    alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 20,
+    alignItems: 'center',
+    marginTop: 12,
   },
-  badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
-  sidebar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 220,
-    height: '100%',
-    backgroundColor: '#eee',
-    padding: 20,
-    zIndex: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  sidebarItem: {
-    fontSize: 18,
-    marginVertical: 10,
-  },
-  scrollContainer: {
-    flex: 1,
-    marginTop: 40,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  addSection: {
-    marginBottom: 30,
-    backgroundColor: '#fafafa',
-    padding: 15,
-    borderRadius: 10,
-  },
+  statusBarText: { color: '#777', fontWeight: '600', fontSize: 13 },
+  appContent: { flex: 1, backgroundColor: '#fafafa', padding: 20, paddingBottom: 90 },
+  scrollContainer: { flex: 1 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
   input: {
     backgroundColor: '#fff',
-    marginBottom: 10,
     padding: 10,
-    borderRadius: 6,
-    borderColor: '#ddd',
+    marginBottom: 12,
+    borderRadius: 8,
     borderWidth: 1,
+    borderColor: '#ddd',
   },
   button: {
-    padding: 12,
-    borderRadius: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    marginVertical: 5,
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  buttonText: { color: 'white', fontWeight: '700', fontSize: 16 },
   foodItem: {
     backgroundColor: '#fff',
-    marginBottom: 20,
-    borderRadius: 12,
-    padding: 15,
+    padding: 12,
+    marginBottom: 15,
+    borderRadius: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  foodImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 10,
+  foodImage: { width: '100%', height: 150, borderRadius: 15, marginBottom: 8 },
+  foodName: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
+  foodDescription: { fontSize: 14, color: '#555', marginBottom: 6 },
+  foodPrice: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+    backgroundColor: '#fff',
+    width: PHONE_WIDTH,
+    alignSelf: 'center',
+    position: 'absolute',
+    bottom: 0,
   },
-  foodName: { fontSize: 22, fontWeight: 'bold' },
-  foodDescription: { fontSize: 14, color: '#555', marginBottom: 5 },
-  foodPrice: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  link: { color: '#007bff', marginTop: 30, fontSize: 18, textAlign: 'center' },
+  navItem: { alignItems: 'center' },
+  navText: { fontSize: 12, marginTop: 4, color: '#333' },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalContainer: {
+    width: PHONE_WIDTH * 0.9,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 10,
+  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+  modalButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
 });
 
 export default FoodScreen;

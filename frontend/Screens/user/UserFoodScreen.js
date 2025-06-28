@@ -11,9 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import axios from 'axios';
-import WeatherCard from '../user/WeatherCard';
 import { Calendar } from 'react-native-calendars';
-import Sidebar from '..//user/Header';  // Importo Sidebar-in
+import Sidebar from '../user/Header';  // Kontrollo rrugën sipas strukturës tënde
 
 const API_URL = 'http://localhost:3012/foods';
 const ORDER_API_URL = 'http://localhost:3012/orders';
@@ -24,7 +23,7 @@ const API_EVENTS_URL = Platform.OS === 'android'
 
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
-const NOTCH_HEIGHT = 30;
+const NOTCH_HEIGHT = 35;
 
 const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs }) => {
   const [foodData, setFoodData] = useState([]);
@@ -156,17 +155,19 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
   return (
     <View style={styles.container}>
       <View style={styles.phoneFrame}>
-        <View style={styles.notch} />
-        <View style={styles.statusBar}>
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>9:41 AM</Text>
+        {/* Notch */}
+        <View style={styles.notch}>
+          <Text style={styles.statusBarText}>9:41 AM</Text>
         </View>
 
+        {/* App Content */}
         <View style={styles.appContent}>
+          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={toggleSidebar}>
               <Text style={styles.headerButton}>☰</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Fast Food </Text>
+            <Text style={styles.headerTitle}>Fast Food</Text>
             <TouchableOpacity onPress={navigateToHome}>
               <Text style={styles.headerButton}>🏠</Text>
             </TouchableOpacity>
@@ -185,7 +186,7 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
             />
           )}
 
-          <ScrollView style={styles.content}>
+          <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 60 }}>
             {activeScreen === 'menu' && (
               foodData.map(food => (
                 <View key={food.id} style={styles.card}>
@@ -201,7 +202,6 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
                 </View>
               ))
             )}
-            
 
             {activeScreen === 'cart' && (
               <>
@@ -268,36 +268,37 @@ const UFoodScreen = ({ navigateToHome, navigateToAboutUs, navigateToContactUs })
             )}
 
             {activeScreen === 'events' && (
-              <View style={styles.eventsContainer}>
-                <Text style={styles.checkoutTitle}>Evente</Text>
+              <>
                 <Calendar
-                  markedDates={{
-                    ...events,
-                    [selectedDate]: { selected: true, selectedColor: 'blue' }
-                  }}
                   onDayPress={onDateSelected}
+                  markedDates={events}
+                  style={styles.calendar}
                 />
                 {selectedDate && selectedDateEvents.length > 0 && (
-                  <View style={{ marginTop: 20 }}>
-                    <Text style={{ fontWeight: 'bold' }}>Eventet e datës {selectedDate}:</Text>
+                  <View style={styles.eventDetails}>
+                    <Text style={styles.eventTitle}>Eventet më {selectedDate}</Text>
                     {selectedDateEvents.map(event => (
-                      <Text key={event.id} style={{ marginVertical: 5 }}>{event.title}</Text>
+                      <View key={event.id} style={styles.eventItem}>
+                        <Text style={styles.eventItemTitle}>{event.title}</Text>
+                        <Text>{event.description}</Text>
+                      </View>
                     ))}
                   </View>
                 )}
-              </View>
+              </>
             )}
           </ScrollView>
 
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={() => setActiveScreen('menu')}>
-              <Text style={styles.footerButton}>Menu</Text>
+          {/* Bottom navigation */}
+          <View style={styles.bottomNav}>
+            <TouchableOpacity onPress={() => setActiveScreen('menu')} style={styles.navItem}>
+              <Text style={[styles.navText, activeScreen === 'menu' && styles.navTextActive]}>Menu</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveScreen('cart')}>
-              <Text style={styles.footerButton}>Cart ({cart.length})</Text>
+            <TouchableOpacity onPress={() => setActiveScreen('cart')} style={styles.navItem}>
+              <Text style={[styles.navText, activeScreen === 'cart' && styles.navTextActive]}>Cart</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveScreen('events')}>
-              <Text style={styles.footerButton}>Events</Text>
+            <TouchableOpacity onPress={() => setActiveScreen('events')} style={styles.navItem}>
+              <Text style={[styles.navText, activeScreen === 'events' && styles.navTextActive]}>Events</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -316,167 +317,224 @@ const styles = StyleSheet.create({
   phoneFrame: {
     width: PHONE_WIDTH,
     height: PHONE_HEIGHT,
-    backgroundColor: 'black',
+    backgroundColor: '#000',
     borderRadius: 40,
-    overflow: 'hidden',
+    paddingTop: NOTCH_HEIGHT,
+    shadowColor: '#333',
+    shadowOpacity: 0.7,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 10 },
   },
   notch: {
+    position: 'absolute',
+    top: 0,
+    left: PHONE_WIDTH / 2 - 60,
+    width: 120,
     height: NOTCH_HEIGHT,
-    backgroundColor: 'black',
+    backgroundColor: '#111',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-  },
-  statusBar: {
-    height: 20,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  statusBarText: {
+    color: '#eee',
+    fontWeight: '600',
   },
   appContent: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    overflow: 'hidden',
   },
   header: {
     height: 50,
-    backgroundColor: '#2e86de',
+    backgroundColor: '#2980b9',
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 15,
   },
-  headerTitle: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
   headerButton: {
-    color: 'white',
-    fontSize: 24,
+    color: '#fff',
+    fontSize: 28,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 20,
   },
   content: {
-    flex: 1,
-    padding: 10,
+    paddingHorizontal: 15,
   },
   card: {
     flexDirection: 'row',
-    marginBottom: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    marginVertical: 8,
     overflow: 'hidden',
+    shadowColor: '#999',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   foodImage: {
-    width: 100,
-    height: 100,
+    width: 110,
+    height: 110,
+    resizeMode: 'cover',
   },
   cardContent: {
     flex: 1,
-    padding: 10,
+    padding: 12,
+    justifyContent: 'space-between',
   },
   foodName: {
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2980b9',
   },
   foodDesc: {
     fontSize: 14,
-    color: '#555',
+    color: '#666',
   },
   foodPrice: {
-    fontWeight: 'bold',
-    marginTop: 5,
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 6,
   },
   addButton: {
-    marginTop: 10,
-    backgroundColor: '#27ae60',
-    paddingVertical: 6,
-    borderRadius: 5,
+    marginTop: 8,
+    backgroundColor: '#2980b9',
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
   },
   addButtonText: {
-    color: 'white',
-    textAlign: 'center',
+    color: '#fff',
+    fontWeight: '700',
   },
   emptyCartText: {
+    marginTop: 40,
+    fontSize: 18,
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
+    color: '#555',
   },
   cartItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#eee',
   },
   cartItemText: {
     fontSize: 16,
+    color: '#333',
   },
   removeText: {
-    color: 'red',
+    color: '#d9534f',
+    fontWeight: '600',
   },
   checkoutButton: {
-    backgroundColor: '#2980b9',
-    padding: 15,
-    marginVertical: 20,
+    backgroundColor: '#27ae60',
+    paddingVertical: 14,
     borderRadius: 10,
+    marginVertical: 20,
+    marginHorizontal: 50,
+    alignItems: 'center',
   },
   checkoutButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 18,
-    textAlign: 'center',
   },
   checkoutForm: {
-    padding: 10,
+    padding: 20,
   },
   checkoutTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+    color: '#2980b9',
     textAlign: 'center',
   },
   input: {
     borderWidth: 1,
     borderColor: '#bbb',
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    height: 40,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    fontSize: 16,
   },
   confirmButton: {
-    backgroundColor: '#27ae60',
-    padding: 12,
-    borderRadius: 5,
-    marginVertical: 10,
+    backgroundColor: '#2980b9',
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginBottom: 12,
+    alignItems: 'center',
   },
   confirmButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
   },
   cancelButton: {
-    backgroundColor: '#e74c3c',
-    padding: 12,
-    borderRadius: 5,
-    marginVertical: 10,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2980b9',
+    alignItems: 'center',
   },
   cancelButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: '#2980b9',
+    fontWeight: '700',
+    fontSize: 18,
   },
-  eventsContainer: {
-    padding: 10,
-  },
-  footer: {
+  bottomNav: {
     height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
+    backgroundColor: '#2980b9',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
   },
-  footerButton: {
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  navText: {
+    color: '#cbd6e8',
+    fontWeight: '600',
+  },
+  navTextActive: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  calendar: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  eventDetails: {
+    padding: 15,
+    backgroundColor: '#f0f4f8',
+    borderRadius: 12,
+    marginBottom: 30,
+  },
+  eventTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#2980b9',
+  },
+  eventItem: {
+    marginBottom: 12,
+  },
+  eventItemTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2e86de',
+    fontWeight: '600',
   },
 });
 

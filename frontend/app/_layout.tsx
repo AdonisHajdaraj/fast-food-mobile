@@ -14,6 +14,9 @@ import UFoodScreen from '../Screens/user/UserFoodScreen';
 import HomeScreen from '../Screens/components/HomeScreen';
 import AdminMessagesScreen from '../Screens/admin/AdminMessages';
 import AdminScreen from '../Screens/admin/AdminScreen';
+import TasksScreen from '../Screens/admin/TasksScreen';
+
+
 
 
 export default function App() {
@@ -30,6 +33,9 @@ export default function App() {
   const navigateToUFood = () => setScreen('UFood');
   const navigateToAdminMessages = () => setScreen('adminMessages');
   const navigateToAdminScreen = () => setScreen('admin');
+  const navigateToTasks = () => setScreen('tasks');
+
+
   
 
   return (
@@ -66,18 +72,38 @@ export default function App() {
       {screen === 'food' && (
         <FoodScreen
           navigateToHome={navigateToHome}
-       
+          navigateToTasks={navigateToTasks}
+
+
           navigateToAdminMessage={navigateToAdminMessages}
-          navigateToAdminScreen={navigateToAdminScreen}
-        />
+          navigateToAdminScreen={navigateToAdminScreen} navigateToLogin={navigateToLogin}        />
       )}
 
       {/* Ekrani About Us dhe Contact Us */}
-      {screen === 'aboutUs' && <AboutUs navigateToUFood={navigateToUFood} />}
-      {screen === 'contactUs' && <ContactUs navigateToUFood={navigateToUFood} />}
+      {screen === 'aboutUs' && (
+        <AboutUs
+          navigateToHome={navigateToHome}
+          navigateToAboutUs={navigateToAboutUs}
+          navigateToContactUs={navigateToContactUs}
+        />
+      )}
+      {screen === 'contactUs' && (
+        <ContactUs
+          navigateToHome={navigateToHome}
+          navigateToAboutUs={navigateToAboutUs}
+          navigateToContactUs={navigateToContactUs}
+        />
+      )}
   {/* Ekrani Admin Messages */}
-{screen === 'adminMessages' && <AdminMessagesScreen navigateToFood={navigateToFood}/>}
-{screen === 'admin' && <AdminScreen  navigateToFood={navigateToFood}/>}
+{screen === 'adminMessages' && <AdminMessagesScreen navigateToFood={navigateToFood} 
+navigateToAdminScreen={navigateToAdminScreen} 
+navigateToAdminMessage={navigateToAdminMessages} 
+navigateToTasks={navigateToTasks}/>}
+{screen === 'admin' && <AdminScreen  
+        navigateToFood={navigateToFood}
+        navigateToAdminMessage={navigateToAdminMessages} 
+        navigateToAdminScreen={navigateToAdminScreen} 
+        navigateToTasks={navigateToTasks}/>}
 
 
 
@@ -89,6 +115,9 @@ export default function App() {
     navigateToContactUs={navigateToContactUs} 
     
   />
+)}
+{screen === 'tasks' && (
+  <TasksScreen navigateToFood={navigateToFood} navigateToAdminScreen={navigateToAdminScreen} navigateToAdminMessage={navigateToAdminMessages} navigateToTasks={navigateToTasks} />
 )}
 
 

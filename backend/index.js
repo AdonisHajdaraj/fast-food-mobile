@@ -214,21 +214,18 @@ app.get('/api/orders', (req, res) => {
     }
   });
 });
-app.delete('/api/orders/:id', async (req, res) => {
-  const orderId = req.params.id;
-  try {
-    const [result] = await pool.query('DELETE FROM orders WHERE id = ?', [orderId]);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
 
-    res.json({ message: 'Order deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
+
+app.delete('/api/orders/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM orders WHERE id = ?';
+  db.query(query, [id], (err) => {
+    if (err) return res.status(500).json({ message: 'Gabim gjatë fshirjes!' });
+    res.json({ message: 'Ushqimi u fshi me sukses!' });
+  });
 });
+
 
 app.get('/events', (req, res) => {
   const query = 'SELECT * FROM events ORDER BY date ASC';
@@ -259,10 +256,20 @@ app.post('/events', (req, res) => {
       return res.status(500).json({ message: 'Gabim gjatë ruajtjes së eventit.' });
     }
 
-    res.status(201).json({ id: result.insertId, date, title, description });
+    res.status(201).json
+    ({ id: result.insertId, date, title, description });
   });
 });
 
+
+app.delete('/events/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM events WHERE id = ?';
+  db.query(query, [id], (err) => {
+    if (err) return res.status(500).json({ message: 'Gabim gjatë fshirjes!' });
+    res.json({ message: 'eventi  u fshi me sukses!' });
+  });
+});
 
 app.listen(port, () => {
   console.log(`Serveri po funksionon në http://localhost:${port}`);

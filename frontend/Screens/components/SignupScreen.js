@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-const PHONE_WIDTH = 380;
-const PHONE_HEIGHT = 820;
-const NOTCH_HEIGHT = 30;
+const PHONE_WIDTH = 390;
+const PHONE_HEIGHT = 844;
+const NOTCH_HEIGHT = 35;
 
 const SignupScreen = ({ navigateToLogin }) => {
   const [name, setName] = useState('');
@@ -50,37 +52,60 @@ const SignupScreen = ({ navigateToLogin }) => {
   return (
     <View style={styles.container}>
       <View style={styles.phoneFrame}>
-        <View style={styles.notch} />
-        <View style={styles.statusBar}>
+        <View style={styles.notch}>
           <Text style={styles.statusBarText}>9:41 AM</Text>
         </View>
 
         <View style={styles.appContent}>
+          {/* Logo */}
+          <Image
+            source={{
+              uri: 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png',
+            }}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
           <Text style={styles.title}>Signup</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Name"
-            value={name}
-            onChangeText={setName}
-          />
+          {/* Name Input */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="person" size={24} color="#777" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={name}
+              onChangeText={setName}
+              editable={true}
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="email" size={24} color="#777" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={true}
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="lock" size={24} color="#777" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={true}
+            />
+          </View>
 
           <TouchableOpacity style={styles.button} onPress={handleSignup}>
             <Text style={styles.buttonText}>Signup</Text>
@@ -98,14 +123,14 @@ const SignupScreen = ({ navigateToLogin }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333', // sfond jashtë telefonit
+    backgroundColor: '#333', // background jashtë telefonit, si në Login/Home
     justifyContent: 'center',
     alignItems: 'center',
   },
   phoneFrame: {
     width: PHONE_WIDTH,
     height: PHONE_HEIGHT,
-    backgroundColor: 'black',
+    backgroundColor: '#fff', // e bardhë si në Login/Home
     borderRadius: 50,
     shadowColor: '#000',
     shadowOpacity: 0.9,
@@ -114,61 +139,79 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   notch: {
-    width: 200,
+    width: 210,
     height: NOTCH_HEIGHT,
-    backgroundColor: 'black',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: '#f0f0f0', // si në Login/Home
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     alignSelf: 'center',
-    marginTop: 10,
-  },
-  statusBar: {
-    height: 20,
-    backgroundColor: 'black',
-    alignItems: 'center',
+    marginTop: 12,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBarText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
+    color: '#777',
+    fontWeight: '600',
+    fontSize: 13,
   },
   appContent: {
     flex: 1,
-    backgroundColor: '#fafafa',
-    padding: 20,
+    paddingHorizontal: 32,
+    paddingTop: 30,
     justifyContent: 'center',
   },
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    marginBottom: 25,
+  },
   title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    color: '#333',
+    fontSize: 34,
+    fontWeight: '700',
+    marginBottom: 30,
+    color: '#222',
     textAlign: 'center',
   },
-  input: {
-    width: '100%',
-    height: 50,
-    borderColor: '#ccc',
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fafafa',
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 10,
+    borderColor: '#ddd',
     marginBottom: 20,
-    paddingLeft: 15,
+    paddingHorizontal: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 50,
     fontSize: 16,
-    backgroundColor: '#fff',
+    color: '#333',
   },
   button: {
-    width: '100%',
     backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     marginBottom: 15,
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
   },
   link: {
     fontSize: 16,

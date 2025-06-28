@@ -6,7 +6,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
+const IPHONE_13_PRO_WIDTH = 390;
+const IPHONE_13_PRO_HEIGHT = 844;
+const NOTCH_HEIGHT = 35;
 
 const LoginScreen = ({
   navigateToHome,
@@ -34,8 +43,6 @@ const LoginScreen = ({
 
         if (response.ok) {
           Alert.alert('Login Success', 'You have successfully logged in!');
-          console.log('Role:', data.role);
-
           if (data.role === 'admin') {
             navigateToFood();
           } else {
@@ -57,45 +64,67 @@ const LoginScreen = ({
 
   return (
     <View style={styles.container}>
-      {/* Phone Frame */}
       <View style={styles.phoneFrame}>
-        {/* Notch */}
-        <View style={styles.notch} />
-
-        {/* Status Bar */}
-        <View style={styles.statusBar}>
+        <View style={styles.notch}>
           <Text style={styles.statusBarText}>9:41 AM</Text>
         </View>
 
-        {/* App Content */}
-        <View style={styles.appContent}>
-          <Text style={styles.title}>Login</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+        <KeyboardAvoidingView
+          style={styles.appContent}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={20}
+        >
+          {/* Logo Image from URL */}
+          <Image
+            source={{
+              uri: 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png',
+            }}
+            style={styles.logo}
+            resizeMode="contain"
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <Text style={styles.title}>Welcome Back</Text>
+
+          {/* Email Input with Icon */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="email" size={24} color="#777" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+            />
+          </View>
+
+          {/* Password Input with Icon */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="lock" size={24} color="#777" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+          </View>
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={isLoading}
           >
-            <Text style={styles.buttonText}>
-              {isLoading ? 'Logging in...' : 'Login'}
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Login</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={navigateToForgotPassword}>
@@ -105,15 +134,11 @@ const LoginScreen = ({
           <TouchableOpacity onPress={navigateToSignup}>
             <Text style={styles.linkText}>Don't have an account? Sign up</Text>
           </TouchableOpacity>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </View>
   );
 };
-
-const PHONE_WIDTH = 380;
-const PHONE_HEIGHT = 820;
-const NOTCH_HEIGHT = 30;
 
 const styles = StyleSheet.create({
   container: {
@@ -123,9 +148,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   phoneFrame: {
-    width: PHONE_WIDTH,
-    height: PHONE_HEIGHT,
-    backgroundColor: 'black',
+    width: IPHONE_13_PRO_WIDTH,
+    height: IPHONE_13_PRO_HEIGHT,
+    backgroundColor: '#fff',
     borderRadius: 50,
     shadowColor: '#000',
     shadowOpacity: 0.9,
@@ -134,71 +159,91 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   notch: {
-    width: 200,
+    width: 210,
     height: NOTCH_HEIGHT,
-    backgroundColor: 'black',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     alignSelf: 'center',
-    marginTop: 10,
-    zIndex: 2,
-  },
-  statusBar: {
-    height: 20,
-    backgroundColor: 'black',
-    alignItems: 'center',
+    marginTop: 12,
+
+    // Center content vertically and horizontally
     justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBarText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
+    color: '#777',
+    fontWeight: '600',
+    fontSize: 13,
   },
   appContent: {
     flex: 1,
-    backgroundColor: '#fafafa',
-    padding: 20,
+    paddingHorizontal: 32,
+    paddingTop: 40,
     justifyContent: 'center',
   },
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    marginBottom: 30,
+  },
   title: {
-    fontSize: 30,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '700',
     marginBottom: 40,
-    color: '#333',
+    color: '#222',
     textAlign: 'center',
   },
-  input: {
-    width: '100%',
-    height: 50,
-    borderColor: '#ccc',
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fafafa',
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 10,
+    borderColor: '#ddd',
     marginBottom: 20,
-    paddingLeft: 15,
+    paddingHorizontal: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 52,
     fontSize: 16,
-    backgroundColor: '#fff',
+    color: '#333',
   },
   button: {
     width: '100%',
     backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 24,
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
   },
   buttonDisabled: {
     backgroundColor: '#9CCC9C',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
   },
   linkText: {
-    color: '#1E90FF',
+    color: '#3498db',
     textAlign: 'center',
-    marginTop: 10,
+    fontSize: 16,
+    marginVertical: 6,
   },
 });
 

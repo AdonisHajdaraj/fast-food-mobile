@@ -1,26 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity,
+  Alert, ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const ORDER_API_URL = 'http://localhost:3012/api/orders';
-
-const statusColors = {
-  new: '#4CAF50', // e gjelbër për porosi të reja
-};
+const API_URL = 'http://localhost:3012/api/orders';
 
 const PHONE_WIDTH = 380;
 const PHONE_HEIGHT = 820;
-const NOTCH_HEIGHT = 30;
+const NOTCH_HEIGHT = 35;
 
-const AdminScreen = ({ navigateToFood }) => {
+const AdminScreen = ({
+  navigateToFood,
+  navigateToAdminScreen,
+  navigateToAdminMessage,
+  navigateToTasks
+}) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -31,7 +28,7 @@ const AdminScreen = ({ navigateToFood }) => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(ORDER_API_URL, { params: { status: 'new' } });
+      const res = await axios.get(API_URL, { params: { status: 'new' } });
       setOrders(res.data);
     } catch (error) {
       Alert.alert('Gabim', 'Nuk mund të merren porositë');
@@ -40,95 +37,77 @@ const AdminScreen = ({ navigateToFood }) => {
     }
   };
 
-  const deleteOrder = (id) => {
-    Alert.alert(
-      'Fshi porosinë',
-      'A jeni i sigurt që doni ta fshini këtë porosi?',
-      [
-        { text: 'Jo' },
-        {
-          text: 'Po',
-          onPress: async () => {
-            try {
-              await axios.delete(`${ORDER_API_URL}/${id}`);
-              fetchOrders();
-            } catch (error) {
-              Alert.alert('Gabim', 'Fshirja dështoi');
-            }
-          },
-        },
-      ]
-    );
+  const deleteOrder = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      setOrders(prev => prev.filter(order => order.id !== id));
+    } catch (error) {
+      Alert.alert('Gabim', 'Nuk u fshi porosia');
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Frame telefoni origjinal */}
       <View style={styles.phoneFrame}>
-        <View style={styles.notch} />
-        <View style={styles.statusBar}>
+        {/* Notch */}
+        <View style={styles.notch}>
           <Text style={styles.statusBarText}>9:41 AM</Text>
         </View>
 
+        {/* Content */}
         <View style={styles.appContent}>
-          <Text style={styles.title}>Porositë e Reja</Text>
-
-          <View style={styles.navigationButtonContainer}>
-            <TouchableOpacity style={styles.button} onPress={navigateToFood}>
-              <Text style={styles.buttonText}>Back to Home</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.title}>📦 Porositë e Reja</Text>
 
           {loading ? (
             <ActivityIndicator size="large" color="#4CAF50" style={{ marginTop: 20 }} />
           ) : (
-            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 30 }}>
-              {orders.length === 0 && (
+            <ScrollView contentContainerStyle={{ paddingBottom: 90, alignItems: 'center' }}>
+              {orders.length === 0 ? (
                 <Text style={styles.noOrders}>Nuk ka porosi të reja për momentin.</Text>
-              )}
-              {orders.map((order) => (
-                <View
-                  key={order.id}
-                  style={[
-                    styles.card,
-                    { borderLeftColor: statusColors[order.status], borderLeftWidth: 6 },
-                  ]}
-                >
-                  <Text style={styles.orderTitle}>Porosia Nr: {order.id}</Text>
-                  <Text>
-                    <Text style={styles.bold}>Emri:</Text> {order.name}
-                  </Text>
-                  <Text>
-                    <Text style={styles.bold}>Lokacioni:</Text> {order.location}
-                  </Text>
-                  <Text>
-                    <Text style={styles.bold}>Numri:</Text> {order.phone}
-                  </Text>
-                  <Text>
-                    <Text style={styles.bold}>Mënyra e Pagesës:</Text> {order.paymentMethod}
-                  </Text>
-                  <Text style={styles.bold}>Ushqimet:</Text>
-                  {order.items &&
-                    order.items.map((item, idx) => (
-                      <Text key={idx}>
-                        {' '}
-                        - {item.name} (${item.price})
-                      </Text>
-                    ))}
-                  <Text style={[styles.bold, { marginTop: 5 }]}>
-                    Totali: ${parseFloat(order.total).toFixed(2)}
-                  </Text>
+              ) : (
+                orders.map(order => (
+                  <View key={order.id} style={styles.card}>
+                    <Text style={styles.orderTitle}>Porosia Nr: {order.id}</Text>
+                    <Text style={styles.orderLine}><Text style={styles.label}>👤 Emri:</Text> {order.name}</Text>
+                    <Text style={styles.orderLine}><Text style={styles.label}>📍 Lokacioni:</Text> {order.location}</Text>
+                    <Text style={styles.orderLine}><Text style={styles.label}>📞 Numri:</Text> {order.phone}</Text>
+                    <Text style={styles.orderLine}><Text style={styles.label}>💳 Pagesa:</Text> {order.paymentMethod}</Text>
 
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => deleteOrder(order.id)}
-                  >
-                    <Text style={styles.deleteButtonText}>Fshi</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+                    <Text style={[styles.label, { marginTop: 8 }]}>🍔 Ushqimet:</Text>
+                    {order.items?.map((item, i) => (
+                      <Text key={i} style={styles.itemText}>- {item.name} (${item.price})</Text>
+                    ))}
+
+                    <Text style={styles.total}>Totali: ${parseFloat(order.total).toFixed(2)}</Text>
+
+                    <TouchableOpacity style={styles.deleteButton} onPress={() => deleteOrder(order.id)}>
+                      <Text style={styles.deleteButtonText}>Fshi Porosinë</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
             </ScrollView>
           )}
+        </View>
+
+        {/* Navbar */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem} onPress={navigateToFood}>
+            <Icon name="home-outline" size={26} color="#333" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={navigateToAdminScreen}>
+            <Icon name="settings-outline" size={26} color="#333" />
+            <Text style={styles.navText}>Admin</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={navigateToAdminMessage}>
+            <Icon name="chatbubble-ellipses-outline" size={26} color="#333" />
+            <Text style={styles.navText}>Messages</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={navigateToTasks}>
+            <Icon name="list-outline" size={26} color="#333" />
+            <Text style={styles.navText}>Tasks</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -140,84 +119,104 @@ const styles = StyleSheet.create({
   phoneFrame: {
     width: PHONE_WIDTH,
     height: PHONE_HEIGHT,
-    backgroundColor: 'black',
+    backgroundColor: '#fff',
     borderRadius: 50,
     shadowColor: '#000',
-    shadowOpacity: 0.9,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
     overflow: 'hidden',
   },
   notch: {
-    width: 200,
+    width: 210,
     height: NOTCH_HEIGHT,
-    backgroundColor: 'black',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: '#f0f0f0',
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     alignSelf: 'center',
-    marginTop: 10,
-    zIndex: 2,
-  },
-  statusBar: {
-    height: 20,
-    backgroundColor: 'black',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
   },
   statusBarText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
+    color: '#777',
+    fontWeight: '600',
+    fontSize: 13,
   },
   appContent: {
     flex: 1,
     backgroundColor: '#fafafa',
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-  navigationButtonContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
   },
-  button: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
+  noOrders: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#999',
+    marginTop: 20,
+  },
+  card: {
+    backgroundColor: '#fff',
+    width: '90%',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
   },
-  buttonText: {
-    color: '#fff',
+  orderTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#444',
+  },
+  label: { fontWeight: 'bold', color: '#333' },
+  orderLine: { marginBottom: 4, color: '#555' },
+  itemText: { marginLeft: 8, fontSize: 14, color: '#444' },
+  total: {
+    marginTop: 10,
+    fontWeight: 'bold',
+    color: '#000',
     fontSize: 16,
   },
-  scrollView: { flex: 1 },
-  noOrders: { textAlign: 'center', fontSize: 18, color: '#777', marginTop: 20 },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  orderTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  bold: { fontWeight: 'bold' },
   deleteButton: {
-    marginTop: 15,
+    marginTop: 12,
     backgroundColor: '#e53935',
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
-    elevation: 2,
   },
   deleteButtonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 15,
   },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+    backgroundColor: '#fff',
+    width: PHONE_WIDTH,
+    alignSelf: 'center',
+    position: 'absolute',
+    bottom: 0,
+  },
+  navItem: { alignItems: 'center' },
+  navText: { fontSize: 12, marginTop: 4, color: '#333' },
 });
 
 export default AdminScreen;
